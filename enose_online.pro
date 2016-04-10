@@ -11,6 +11,9 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = enose_online
 TEMPLATE = app
 
+target.files = enose_online
+target.path = /root/qi_enose_online
+INSTALLS = target
 
 SOURCES += main.cpp\
         mainwindow.cpp \
@@ -23,7 +26,8 @@ SOURCES += main.cpp\
     myinputpanel.cpp \
     myinputpanelcontext.cpp \
     qcommon.cpp \
-    stm32_spislave.c
+    stm32_spislave.c \
+    beep.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -35,7 +39,8 @@ HEADERS  += mainwindow.h \
     myinputpanel.h \
     myinputpanelcontext.h \
     qcommon.h \
-    stm32_spislave.h
+    stm32_spislave.h \
+    beep.h
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui

@@ -18,16 +18,6 @@ enum RESULT{
 	SUCCESS
 };
 
-enum SWITCH{
-    CLOSE = 0,
-    OPEN
-};
-
-enum THERMO{
-    STOP = 0,
-    START
-};
-
 #ifdef __cplusplus
 }
 #endif
