@@ -4,6 +4,7 @@
 
 #include <QThread>
 #include <QString>
+#include "qcommon.h"
 
 /*********************串口线程*****************************/
 class LogicThread : public QThread
@@ -20,6 +21,8 @@ private:
     volatile bool stopped;
 
 signals:
+    //逻辑线程发送此信号给串口线程通知串口线程开始数据采集
+    void send_to_uartthread_sample_start(UART_SAMPLE Uart_sample);
 
 public slots:
 

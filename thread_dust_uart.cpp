@@ -25,3 +25,10 @@ void UartThread::stop()
 {
     stopped = true;
 }
+
+//槽函数,响应逻辑线程的信号，开始采集数据
+void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE Uart_sample)
+{
+    qDebug("Uart_sample.sample_mode = %d\nUart_sample.sample_time = %d\n", Uart_sample.sample_mode, Uart_sample.sample_time);
+    qDebug() << "Uart_sample.filename = " << Uart_sample.filename << "\n";
+}
