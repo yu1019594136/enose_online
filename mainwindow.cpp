@@ -22,15 +22,33 @@ MainWindow::MainWindow(QWidget *parent) :
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
     timer->start(1000 * 60);//一分钟更新一次时间
+
+    /* 实例化三个线程并启动,将三个子线程相关的信号关联到GUI主线程的槽函数 */
+    uartthread = new UartThread ();
+    logicthread = new LogicThread ();
+
+    uartthread->start();
+    logicthread->start();
+
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+    delete uartthread;
+    delete logicthread;
 }
 
 void MainWindow::on_quit_clicked()
 {
+    if(uartthread->isRunning())
+        uartthread->stop();
+    while(!uartthread->isFinished());
+
+    if(logicthread->isRunning())
+        logicthread->stop();
+    while(!logicthread->isFinished());
+
     /* 退出事件循环，结束程序 */
     QApplication *p;
     p->quit();

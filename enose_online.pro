@@ -27,7 +27,9 @@ SOURCES += main.cpp\
     myinputpanelcontext.cpp \
     qcommon.cpp \
     stm32_spislave.c \
-    beep.cpp
+    beep.cpp \
+    thread_dust_uart.cpp \
+    thread_logic_control.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -40,7 +42,9 @@ HEADERS  += mainwindow.h \
     myinputpanelcontext.h \
     qcommon.h \
     stm32_spislave.h \
-    beep.h
+    beep.h \
+    thread_dust_uart.h \
+    thread_logic_contrl.h
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui
