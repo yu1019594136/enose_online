@@ -1,8 +1,3 @@
-#include "beep.h"
-#include <unistd.h>         //usleep()
-#include <stdio.h>
-#include "sht21.h"
-
 //界面相关头文件
 #include "mainwindow.h"
 #include <QApplication>
