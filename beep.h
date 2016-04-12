@@ -4,6 +4,9 @@
 
 #include "GPIO.h"
 
+//控制蜂鸣器的IO口编号
+#define BEEP_PORT               30
+
 //蜂鸣器初始化
 void beep_init();
 

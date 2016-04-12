@@ -7,7 +7,7 @@
 #include <QMetaType>    //注册元类型
 
 //注册元类型
-Q_DECLARE_METATYPE(UART_SAMPLE)
+Q_DECLARE_METATYPE(UART_SAMPLE_START)
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -20,7 +20,6 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* 启动程序时总是显示第一个选项卡 */
     ui->tabWidget->setCurrentIndex(0);
-    //Qtabwidget->setCurrentIndex(3);
 
     /* 开机显示时间 */
     QDateTime datetime = QDateTime::currentDateTime();
@@ -32,7 +31,7 @@ MainWindow::MainWindow(QWidget *parent) :
     timer->start(1000 * 60);//一分钟更新一次时间
 
     /* 注册元类型 */
-    qRegisterMetaType <UART_SAMPLE>("UART_SAMPLE");
+    qRegisterMetaType <UART_SAMPLE_START>("UART_SAMPLE_START");
 
 
     /* 实例化三个线程并启动,将三个子线程相关的信号关联到GUI主线程的槽函数 */
@@ -40,7 +39,10 @@ MainWindow::MainWindow(QWidget *parent) :
     logicthread = new LogicThread ();
 
     /* 逻辑线程发送信号通知串口线程开始采集数据 */
-    connect(logicthread, SIGNAL(send_to_uartthread_sample_start(UART_SAMPLE)), uartthread, SLOT(recei_fro_logicthread_sample_start(UART_SAMPLE)), Qt::QueuedConnection);
+    connect(logicthread, SIGNAL(send_to_uartthread_sample_start(UART_SAMPLE_START)), uartthread, SLOT(recei_fro_logicthread_sample_start(UART_SAMPLE_START)), Qt::QueuedConnection);
+
+    /* 逻辑线程发送信号通知串口线程停止采集数据 */
+    connect(logicthread, SIGNAL(send_to_uartthread_sample_stop()), uartthread, SLOT(recei_fro_logicthread_sample_stop()), Qt::QueuedConnection);
 
     uartthread->start();
     logicthread->start();

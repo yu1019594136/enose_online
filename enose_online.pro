@@ -29,7 +29,8 @@ SOURCES += main.cpp\
     stm32_spislave.c \
     beep.cpp \
     thread_dust_uart.cpp \
-    thread_logic_control.cpp
+    thread_logic_control.cpp \
+    plot_widget.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -44,7 +45,8 @@ HEADERS  += mainwindow.h \
     stm32_spislave.h \
     beep.h \
     thread_dust_uart.h \
-    thread_logic_contrl.h
+    thread_logic_contrl.h \
+    plot_widget.h
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui
