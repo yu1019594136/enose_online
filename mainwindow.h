@@ -5,6 +5,7 @@
 #include <QTimer>
 #include "thread_dust_uart.h"
 #include "thread_logic_contrl.h"
+#include "uart_plot_widget.h"
 
 namespace Ui {
 class MainWindow;
@@ -31,6 +32,8 @@ private:
     QTimer *timer;//用于更新时间
     UartThread *uartthread;//用于读取串口数据
     LogicThread *logicthread;//用于逻辑控制
+
+    Uart_Plot_Widget *uart_plot_widget;//串口数据绘图选项卡
 
 };
 

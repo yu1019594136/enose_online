@@ -24,10 +24,9 @@ UartThread::UartThread(QObject *parent) :
     uart_plot_data_buf.p_uart_data = NULL;
     uart_plot_data_buf.data_size = 0;
     uart_plot_data_buf.index = 0;
+    uart_plot_data_buf.valid_data_size = 0;
 
     //缓冲区初始化
-//    for(i = 0; i < 10; i++)
-//        uart_data_buffer[i] = 0;
     memset(uart_data_buffer, 0, sizeof(char) * 5);
 
     //实例化定时器
@@ -48,10 +47,10 @@ void UartThread::run()
             {
                 /* 数据起始点测试原理：
                    准备好四个char型存储单元，假设首地址为p
-                   1、每次读取到数据后先存放到p+3;
-                   2、将后三个数据依次往前移动一位，原来的p位置数据将被覆盖掉;
-                   3、检测第p, p+1, p+2位置的数据是否分别为0xFF, 0X18,0X00;
-                   4、如果是，则结束循环，数据起始点确定；否则开始读取下一个数据，并跳转步骤1
+                   (1)、每次读取到数据后先存放到p+3;
+                   (2)、将后三个数据依次往前移动一位，原来的p位置数据将被覆盖掉;
+                   (3)、检测第p, p+1, p+2位置的数据是否分别为0xFF, 0X18,0X00;
+                   (4)、如果是，则结束循环，数据起始点确定；否则开始读取下一个数据，并跳转步骤1
                 */
 
                 //读取到数据后先存放到p+3
@@ -78,27 +77,36 @@ void UartThread::run()
             read(fd_uart, uart_data_buffer+3, 1);//有效数据
             uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index] = uart_data_buffer[3] * 100;
             read(fd_uart, uart_data_buffer+4, 1);//有效数据
-            uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index++] += uart_data_buffer[4];
+            uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index] += uart_data_buffer[4];
+
+            read(fd_uart, uart_data_buffer, 1);//将所有的数据处理穿插在连续的阻塞读取中，充分利用等待时间
 
             //2，保存数据到文件和链表
-            fprintf(fp_data_file, "%u\n", uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index]);
+            fprintf(fp_data_file, "%u\n", uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index++]);//index++, 不断更新有效数据起点,index指向最旧的数据
 
             //qDebug("data[%lu] = %u", uart_plot_data_buf.index, uart_plot_data_buf.p_uart_data[uart_plot_data_buf.index]);
+
+            read(fd_uart, uart_data_buffer, 1);//将所有的数据处理穿插在连续的阻塞读取中，充分利用等待时间
 
             //循环更新，防止越界访问
             if(uart_plot_data_buf.index == uart_sample_start.display_size)
             {
                 uart_plot_data_buf.index = 0;
-                qDebug("cycle...........");
+                //qDebug("a display_size cycle.......");
             }
 
+            read(fd_uart, uart_data_buffer, 1);//将所有的数据处理穿插在连续的阻塞读取中，充分利用等待时间
+
             //3,发送信号更新绘图
+            if(uart_plot_data_buf.valid_data_size < uart_plot_data_buf.data_size)//不断更新有效数据大小，确定绘图数据个数
+                uart_plot_data_buf.valid_data_size++;
+
+            read(fd_uart, uart_data_buffer, 1);//将所有的数据处理穿插在连续的阻塞读取中，充分利用等待时间
+
+            //4, 发送信号，驱动绘图选项卡进行绘图
+            emit send_to_plot_uart_curve();
 
             //无效数据丢弃
-            read(fd_uart, uart_data_buffer, 1);
-            read(fd_uart, uart_data_buffer, 1);
-            read(fd_uart, uart_data_buffer, 1);
-            read(fd_uart, uart_data_buffer, 1);
             read(fd_uart, uart_data_buffer, 1);
             read(fd_uart, uart_data_buffer, 1);
             read(fd_uart, uart_data_buffer, 1);
@@ -139,7 +147,7 @@ void UartThread::run()
     //停止线程时必须释放申请的内存空间
     if(uart_plot_data_buf.p_uart_data != NULL)
     {
-        qDebug("clear memory");
+        qDebug("clear memory for uart plot when uart thread stop");
         free(uart_plot_data_buf.p_uart_data);
     }
     uart_plot_data_buf.p_uart_data = NULL;
@@ -162,6 +170,8 @@ void UartThread::run()
         qDebug() << "fclose(fp_data_file), stop buttom is pressed when sample task is running";
     }
 
+    qDebug("uart thread stopped");
+
 }
 
 void UartThread::stop()
@@ -180,7 +190,7 @@ void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sampl
 
     uart_sample_start = Uart_sample_start;
 
-    /* 检查是否重新分配链表空间 */
+    /* 检查是否重新分配空间 */
 
     //逻辑线程要求的绘图尺寸和串口内存数据块大小不一致时必须重新分配内存块大小
     if(uart_sample_start.display_size != uart_plot_data_buf.data_size)
@@ -196,17 +206,18 @@ void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sampl
         uart_plot_data_buf.p_uart_data = (unsigned short int *)malloc(sizeof(unsigned short int) * uart_sample_start.display_size);
         memset(uart_plot_data_buf.p_uart_data, 0, sizeof(unsigned short int) * uart_sample_start.display_size);//将分配的内存空间初始化为0
 
-        uart_plot_data_buf.data_size = uart_sample_start.display_size;
-        uart_plot_data_buf.index = 0;
-
         qDebug() << "get new memory size";
     }
     else//若大小相等，则内存块不需要重新申请，只需要将原来的内存空间写0即可，索引归0
     {
         memset(uart_plot_data_buf.p_uart_data, 0, sizeof(unsigned short int) * uart_sample_start.display_size);//将分配的内存空间初始化为0
-        uart_plot_data_buf.index = 0;
         qDebug() << "memory size equals!";
     }
+
+    uart_plot_data_buf.filename = uart_sample_start.filename;
+    uart_plot_data_buf.valid_data_size = 0;
+    uart_plot_data_buf.index = 0;
+    uart_plot_data_buf.data_size = uart_sample_start.display_size;
 
     //准备数据保存文件名char
     ba = uart_sample_start.filename.toLatin1();

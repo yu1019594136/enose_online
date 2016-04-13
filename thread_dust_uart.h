@@ -33,12 +33,17 @@ private:
     unsigned char uart_data_buffer[5];  //数据缓冲区，用于确定采样起始以及提取有效数据
 
 signals:
+    //通知逻辑线程串口数据采集完成
     void send_to_logic_uart_sample_complete();
+
+    //通知绘图选项卡开始绘制曲线
+    void send_to_plot_uart_curve();
 
 public slots:
     //响应逻辑线程的信号，开始采集数据
     void recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sample_start);
 
+    //响应停止串口数据采集的槽函数
     void recei_fro_logicthread_sample_stop();
 
 };
