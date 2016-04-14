@@ -21,6 +21,11 @@ protected:
 private:
     volatile bool stopped;
     QTimer *logictimer; //用于逻辑控制的定时器，定时模式使用
+    int task_result;//该变量用于记录任务完成状况
+    //当bit1 = 1,表示串口采集数据完成
+    //当bit2 = 1, 表示PRU数据采集完成
+    //当bit3 = 1, 表示SPI数据采集完成
+    //当bit4 = 1，表示SHT21数据采集完成
 
 signals:
     //逻辑线程发送此信号给串口线程通知串口线程开始数据采集
@@ -30,6 +35,8 @@ signals:
     void send_to_uartthread_sample_stop();
 
 public slots:
+    //接受各个线程的采集任务结果报告
+    void receive_task_report(int Task_finished_report);
 
 private slots:
     //定时器时间到达时用于发送其他线程通知其停止数据采集，或者更新本定时器定时时间

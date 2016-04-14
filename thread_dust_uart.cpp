@@ -15,6 +15,7 @@ UartThread::UartThread(QObject *parent) :
     uart_sample_flag = false;
     fd_close_flag = false;
     start_point_captured = false;
+    Task_completed = UNDEFINED;
 
     filename = NULL;
     fp_data_file = NULL;
@@ -138,7 +139,9 @@ void UartThread::run()
             fd_close_flag = false;//无需重复关闭,该开关，在stop槽函数中变为true
 
             //通知逻辑线程串口数据采集完毕
-            //emit send_to_logic_uart_sample_complete();
+            Task_completed = UART_COMPLETED;
+            emit send_to_logic_uart_sample_complete(Task_completed);
+
         }
 
     }
@@ -232,6 +235,7 @@ void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sampl
     uart_sample_flag = true;
     fd_close_flag = false;
     start_point_captured = false;
+    Task_completed = UNDEFINED;
 
     qDebug() << "slot function: uart sample start";
 

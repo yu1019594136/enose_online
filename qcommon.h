@@ -20,6 +20,15 @@ enum SAMPLE_STATUS{
     STOP
 };
 
+//采集任务类型
+enum TASK_TYPE{
+    UNDEFINED       = 0,
+    UART_COMPLETED  = 1,
+    PRU_COMPLETED   = 2,
+    SPI_COMPLETED   = 4,
+    SHT21_COMPLETED = 8
+};
+
 //逻辑线程通知串口线程开始采集数据
 typedef struct{
     unsigned long display_size; //显示数据点个数

@@ -30,7 +30,8 @@ SOURCES += main.cpp\
     beep.cpp \
     thread_dust_uart.cpp \
     thread_logic_control.cpp \
-    uart_plot_widget.cpp
+    uart_plot_widget.cpp \
+    thread_sensor_PRU.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -46,7 +47,8 @@ HEADERS  += mainwindow.h \
     beep.h \
     thread_dust_uart.h \
     thread_logic_contrl.h \
-    uart_plot_widget.h
+    uart_plot_widget.h \
+    thread_sensor_PRU.h
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui

@@ -7,6 +7,7 @@ LogicThread::LogicThread(QObject *parent) :
     QThread(parent)
 {
     stopped = false;
+    task_result = 0;
 
     logictimer = new QTimer (this);
     connect(logictimer, SIGNAL(timeout()), this, SLOT(logictimer_timeout()));
@@ -28,7 +29,7 @@ void LogicThread::run()
     qDebug() << "100ms passed!";
 
     emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
-    logictimer->start(1000 * 30);//逻辑线程启动定时器开始计时
+    logictimer->start(1000 * 10);//逻辑线程启动定时器开始计时
 
     while(!stopped)
     {
@@ -54,4 +55,22 @@ void LogicThread::logictimer_timeout()
         logictimer->stop();
     }
     emit send_to_uartthread_sample_stop();
+}
+
+void LogicThread::receive_task_report(int Task_finished_report)
+{
+    if(Task_finished_report == UART_COMPLETED)
+    {
+        task_result = task_result | Task_finished_report;
+        qDebug() << "UART task is completed. task_result = " << task_result;
+    }
+//    else if()
+//    {
+//        qDebug();
+//    }
+    else
+    {
+        qDebug() << "a wrong report is received by logic";
+    }
+
 }

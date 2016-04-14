@@ -49,6 +49,9 @@ MainWindow::MainWindow(QWidget *parent) :
     /* 逻辑线程发送信号通知串口线程停止采集数据 */
     connect(logicthread, SIGNAL(send_to_uartthread_sample_stop()), uartthread, SLOT(recei_fro_logicthread_sample_stop()), Qt::QueuedConnection);
 
+    /* 串口线程通知逻辑线程数据采集完成 */
+    connect(uartthread, SIGNAL(send_to_logic_uart_sample_complete(int)), logicthread, SLOT(receive_task_report(int)), Qt::QueuedConnection);
+
     /* 串口线程通知绘图选项卡进行绘图 */
     connect(uartthread, SIGNAL(send_to_plot_uart_curve()), uart_plot_widget, SLOT(recei_fro_uartthread()), Qt::QueuedConnection);
 

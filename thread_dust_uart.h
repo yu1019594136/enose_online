@@ -30,9 +30,11 @@ private:
     UART_SAMPLE_START uart_sample_start;    //线程自身保存参数的结构体
     unsigned char uart_data_buffer[5];  //数据缓冲区，用于确定采样起始以及提取有效数据
 
+    int Task_completed;//采集任务结果报告
+
 signals:
     //通知逻辑线程串口数据采集完成
-    void send_to_logic_uart_sample_complete();
+    void send_to_logic_uart_sample_complete(int);
 
     //通知绘图选项卡开始绘制曲线
     void send_to_plot_uart_curve();
