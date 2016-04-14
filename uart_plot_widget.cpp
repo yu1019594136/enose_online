@@ -107,10 +107,7 @@ void Uart_Plot_Widget::paintEvent(QPaintEvent *event)
 
         //qDebug("height = %u, width = %lu\n", UART_DATA_PLOT_HEIGHT, Uart_Plot_Data_Buf.data_size);
 
-        QPen pen;
-        pen.setColor(color[1]);
-        pen.setWidth(1);
-        painter.setPen(pen);//使用红色点绘图
+        painter.setPen(QPen(color[1]));//red color
 
         //QPainterPath path;
 

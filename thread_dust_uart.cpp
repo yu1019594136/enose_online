@@ -29,9 +29,6 @@ UartThread::UartThread(QObject *parent) :
     //缓冲区初始化
     memset(uart_data_buffer, 0, sizeof(char) * 5);
 
-    //实例化定时器
-    uart_timer = new QTimer(this);
-    connect(uart_timer, SIGNAL(timeout()), this, SLOT(recei_fro_logicthread_sample_stop()));
 }
 
 void UartThread::run()
@@ -135,9 +132,13 @@ void UartThread::run()
                 fp_data_file = NULL;
 
                 qDebug() << "fclose(fp_data_file)";
+                qDebug() << "uart data is saved in " << uart_sample_start.filename;
             }
 
             fd_close_flag = false;//无需重复关闭,该开关，在stop槽函数中变为true
+
+            //通知逻辑线程串口数据采集完毕
+            //emit send_to_logic_uart_sample_complete();
         }
 
     }
@@ -168,6 +169,7 @@ void UartThread::run()
         fp_data_file = NULL;
 
         qDebug() << "fclose(fp_data_file), stop buttom is pressed when sample task is running";
+        qDebug() << "uart data is saved in " << uart_sample_start.filename;
     }
 
     qDebug("uart thread stopped");
@@ -183,8 +185,6 @@ void UartThread::stop()
 //槽函数,响应逻辑线程的信号，开始采集数据
 void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sample_start)
 {
-    qDebug() << "Uart_sample.sample_mode = " << Uart_sample_start.sample_mode << "\n";
-    qDebug() << "Uart_sample.sample_time = " << Uart_sample_start.sample_time << "\n";
     qDebug() << "Uart_sample.display_size = " << Uart_sample_start.display_size << "\n";
     qDebug() << "Uart_sample.filename = " << Uart_sample_start.filename << "\n";
 
@@ -228,17 +228,6 @@ void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sampl
     fd_uart = open_port();
     configure_port(fd_uart);
 
-    //定时模式下设定定时器
-    if(uart_sample_start.sample_mode == TIMING)
-    {
-        uart_timer->start(uart_sample_start.sample_time * 1000);
-        //qDebug() << "TIMING mode, uart_timer start";
-    }
-//    else
-//    {
-//        qDebug() << "MONITOR mode, uart_timer do not start";
-//    }
-
     //启动采样
     uart_sample_flag = true;
     fd_close_flag = false;
@@ -252,17 +241,6 @@ void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sampl
 //      定时模式下，响应定时器溢出信号，停止数据采集
 void UartThread::recei_fro_logicthread_sample_stop()
 {
-    //定时模式下关闭定时器
-    if(uart_sample_start.sample_mode == TIMING)
-    {
-        if(uart_timer->isActive())
-        {
-            uart_timer->stop();
-            //qDebug() << "uart timer stop";
-        }
-
-    }
-
     //停止采集数据
     uart_sample_flag = false;
     fd_close_flag = true;

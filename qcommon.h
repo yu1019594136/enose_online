@@ -22,8 +22,6 @@ enum SAMPLE_STATUS{
 
 //逻辑线程通知串口线程开始采集数据
 typedef struct{
-    int sample_mode;    //采样方式，定时或者长期监测
-    int sample_time;    //定时方式下的采样时间长度
     unsigned long display_size; //显示数据点个数
     QString filename;   //保存数据文件名称
 } UART_SAMPLE_START;

@@ -7,6 +7,10 @@ LogicThread::LogicThread(QObject *parent) :
     QThread(parent)
 {
     stopped = false;
+
+    logictimer = new QTimer (this);
+    connect(logictimer, SIGNAL(timeout()), this, SLOT(logictimer_timeout()));
+
 }
 
 void LogicThread::run()
@@ -15,10 +19,7 @@ void LogicThread::run()
 
     UART_SAMPLE_START uart_sample_start;
 
-    uart_sample_start.sample_mode = MONITOR;
-    uart_sample_start.sample_time = 15;//单位s
-    uart_sample_start.display_size = 40;
-
+    uart_sample_start.display_size = 20;
     QDateTime datetime = QDateTime::currentDateTime();
     uart_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + QString("test") + ".txt";
 
@@ -26,13 +27,12 @@ void LogicThread::run()
     usleep(100000);
     qDebug() << "100ms passed!";
 
-    //emit send_to_uartthread_sample_start(uart_sample_start);
-
-    //usleep(60 * 1000000);
-    //emit send_to_uartthread_sample_stop();
+    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+    logictimer->start(1000 * 30);//逻辑线程启动定时器开始计时
 
     while(!stopped)
     {
+
     }
 
     stopped = false;
@@ -43,4 +43,15 @@ void LogicThread::run()
 void LogicThread::stop()
 {
     stopped = true;
+}
+
+void LogicThread::logictimer_timeout()
+{
+
+    if(logictimer->isActive())
+    {
+        qDebug() << "logictimer time out!";
+        logictimer->stop();
+    }
+    emit send_to_uartthread_sample_stop();
 }

@@ -4,7 +4,6 @@
 #include <QByteArray>
 #include <QThread>
 #include <QString>
-#include <QTimer>
 #include "qcommon.h"
 
 /*********************串口线程*****************************/
@@ -28,7 +27,6 @@ private:
     int fd_uart;        //设备文件句柄
     char *filename;     //保存文件名称
     QByteArray ba;
-    QTimer *uart_timer;     //定时模式下使用
     UART_SAMPLE_START uart_sample_start;    //线程自身保存参数的结构体
     unsigned char uart_data_buffer[5];  //数据缓冲区，用于确定采样起始以及提取有效数据
 
