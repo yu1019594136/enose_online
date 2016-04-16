@@ -3,6 +3,9 @@
 #include <unistd.h>
 #include <QDateTime>
 
+//读取界面参数并发通知逻辑线程开始数据采集
+GUI_Para gui_para;
+
 LogicThread::LogicThread(QObject *parent) :
     QThread(parent)
 {
@@ -17,19 +20,6 @@ LogicThread::LogicThread(QObject *parent) :
 void LogicThread::run()
 {
     qDebug("logic thread starts\n");
-
-    UART_SAMPLE_START uart_sample_start;
-
-    uart_sample_start.display_size = 20;
-    QDateTime datetime = QDateTime::currentDateTime();
-    uart_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + QString("test") + ".txt";
-
-    //等待其他线程准备好
-    usleep(100000);
-    qDebug() << "100ms passed!";
-
-    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
-    logictimer->start(1000 * 10);//逻辑线程启动定时器开始计时
 
     while(!stopped)
     {
@@ -54,6 +44,7 @@ void LogicThread::logictimer_timeout()
         qDebug() << "logictimer time out!";
         logictimer->stop();
     }
+
     emit send_to_uartthread_sample_stop();
 }
 
@@ -73,4 +64,39 @@ void LogicThread::receive_task_report(int Task_finished_report)
         qDebug() << "a wrong report is received by logic";
     }
 
+}
+
+//接收和解析界面参数，开始通知其他线程采集数据
+void LogicThread::recei_parse_GUI_data()
+{
+    QDateTime datetime = QDateTime::currentDateTime();
+
+    //通知串口线程开始采集粉尘传感器数据
+    uart_sample_start.display_size = gui_para.plot_data_num_dust;
+    uart_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_dust.txt");
+
+    //通知PRU线程开始采集SENSOR数据
+    pru_sample_start.display_size = gui_para.plot_data_num_sensor;
+    pru_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_sensor");//PRU线程内部再追加序号尾缀
+    pru_sample_start.sample_time_hours = gui_para.sample_time_hours;
+    pru_sample_start.sample_time_minutes = gui_para.sample_time_minutes;
+    pru_sample_start.sample_time_seconds = gui_para.sample_time_seconds;
+    pru_sample_start.sample_freq = gui_para.sample_freq_sensor;
+    pru_sample_start.AIN[0] = gui_para.AIN[0];
+    pru_sample_start.AIN[1] = gui_para.AIN[1];
+    pru_sample_start.AIN[2] = gui_para.AIN[2];
+    pru_sample_start.AIN[3] = gui_para.AIN[3];
+    pru_sample_start.AIN[4] = gui_para.AIN[4];
+    pru_sample_start.AIN[5] = gui_para.AIN[5];
+    pru_sample_start.AIN[6] = gui_para.AIN[6];
+    pru_sample_start.AIN[7] = gui_para.AIN[7];
+    pru_sample_start.AIN[8] = gui_para.AIN[8];
+    pru_sample_start.AIN[9] = gui_para.AIN[9];
+    pru_sample_start.AIN[10] = gui_para.AIN[10];
+
+    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+
+    emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
+
+    logictimer->start(1000 * 20);//逻辑线程启动定时器开始计时
 }

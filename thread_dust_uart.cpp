@@ -188,10 +188,9 @@ void UartThread::stop()
 //槽函数,响应逻辑线程的信号，开始采集数据
 void UartThread::recei_fro_logicthread_sample_start(UART_SAMPLE_START Uart_sample_start)
 {
-    qDebug() << "Uart_sample.display_size = " << Uart_sample_start.display_size << "\n";
-    qDebug() << "Uart_sample.filename = " << Uart_sample_start.filename << "\n";
-
     uart_sample_start = Uart_sample_start;
+    qDebug() << "uart_sample.display_size = " << uart_sample_start.display_size << "\n";
+    qDebug() << "uart_sample.filename = " << uart_sample_start.filename << "\n";
 
     /* 检查是否重新分配空间 */
 

@@ -14,10 +14,17 @@ enum SAMPLE_MODE{
     MONITOR
 };
 
-//数据采集
+//数据采集模式
 enum SAMPLE_STATUS{
     START = 0,
     STOP
+};
+
+//数据保存模式
+enum DATA_SAVE{
+    LOCAL_HOST = 0,
+    USB_DEVICE = 1,
+    UPLOAD
 };
 
 //采集任务类型
@@ -44,5 +51,43 @@ typedef struct{
     QString filename;   //绘图时在绘图选项卡上面标明数据文件名称
 } UART_PLOT_DATA_BUF;
 
+//逻辑线程通知PRU线程开始采集数据
+typedef struct{
+    unsigned long display_size; //显示数据点个数
+    QString filename;   //保存数据文件名称, 仅仅需要时间戳和userstring, 文件序号需要PRU线程自己计算和添加
+    double sample_freq;//每个通道的采样频率
+    bool AIN[11];//sensor采样通道情况,true表示采集, false表示不采集
+    unsigned int sample_time_hours;//每个通道的时间长度
+    unsigned int sample_time_minutes;//每个通道的时间长度
+    unsigned int sample_time_seconds;//每个通道的时间长度
+} PRU_SAMPLE_START;
+
+
+typedef struct{
+    //采样时间
+    int sample_time_hours;
+    int sample_time_minutes;
+    int sample_time_seconds;
+
+    //绘图选项卡的显示数据个数
+    int plot_data_num_dust;
+    int plot_data_num_air;
+    int plot_data_num_sht21;
+    int plot_data_num_sensor;
+
+    //采样周期/频率
+    unsigned int sample_period_air_ms;
+    unsigned int sample_period_sht21_s;
+    double sample_freq_sensor;
+
+    QString user_string;
+    int data_save_mode;
+
+    //sensor采样通道情况,true表示采集, false表示不采集
+    bool AIN[11];
+
+    int sample_mode;
+
+} GUI_Para;
 
 #endif // QCOMMON_H

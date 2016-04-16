@@ -20,11 +20,13 @@ protected:
 
 private:
     volatile bool stopped;
+    PRU_SAMPLE_START pru_sample_start;
 
 signals:
 
-
 public slots:
+    //接收逻辑线程发过来的参数
+    void recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_sample_start);
 
 private slots:
 
