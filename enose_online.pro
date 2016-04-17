@@ -52,3 +52,10 @@ HEADERS  += mainwindow.h \
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui
+
+win32:CONFIG(release, debug|release): LIBS += -L$$PWD/am335x_pru_package-master/pru_sw/app_loader/lib/release/ -lprussdrvd
+else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/am335x_pru_package-master/pru_sw/app_loader/lib/debug/ -lprussdrvd
+else:unix: LIBS += -L$$PWD/am335x_pru_package-master/pru_sw/app_loader/lib/ -lprussdrvd
+
+INCLUDEPATH += $$PWD/am335x_pru_package-master/pru_sw/app_loader/include
+DEPENDPATH += $$PWD/am335x_pru_package-master/pru_sw/app_loader/include

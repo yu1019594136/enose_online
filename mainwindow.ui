@@ -27,7 +27,7 @@
      <string/>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>1</number>
     </property>
     <widget class="QWidget" name="homepage">
      <attribute name="title">
@@ -155,7 +155,7 @@
        <rect>
         <x>0</x>
         <y>30</y>
-        <width>291</width>
+        <width>304</width>
         <height>141</height>
        </rect>
       </property>
@@ -292,6 +292,15 @@
         <widget class="QDoubleSpinBox" name="doubleSpinBox">
          <property name="alignment">
           <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+         </property>
+         <property name="decimals">
+          <number>2</number>
+         </property>
+         <property name="maximum">
+          <double>999999.000000000000000</double>
+         </property>
+         <property name="value">
+          <double>0.000000000000000</double>
          </property>
         </widget>
        </item>

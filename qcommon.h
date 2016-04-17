@@ -5,8 +5,10 @@
 #include <QString>
 
 /* 程序运行是所需要的一些配置文件存放路径 */
-#define E_NOSE_ONLINE_LOGO                 "/root/qi_enose_online/E-nose_online_Logo.png"
+#define E_NOSE_ONLINE_LOGO                  "/root/qi_enose_online/E-nose_online_Logo.png"
 #define UART_DATA_PLOT_HEIGHT               200
+#define PRUADC_BIN                          "/root/qi_enose_online/PRU_Code/PRUADC.bin"
+#define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
 
 //数据采集模式
 enum SAMPLE_MODE{
