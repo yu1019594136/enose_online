@@ -66,9 +66,18 @@ protected:
 
 private:
     volatile bool stopped;
+    volatile bool pru_sample_flag;
     PRU_SAMPLE_START pru_sample_start;
+    int Task_completed;
+
+    FILE *fp_data_file;   //数据文件句柄
+    char *filename;     //保存文件名称
+    QByteArray ba;
+    QString filename_serial;//
+    unsigned int serial;
 
 signals:
+    void send_to_logic_pru_sample_complete(int task_completed);
 
 public slots:
     //接收逻辑线程发过来的参数

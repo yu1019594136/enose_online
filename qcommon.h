@@ -57,7 +57,7 @@ typedef struct{
 typedef struct{
     unsigned long display_size; //显示数据点个数
     QString filename;   //保存数据文件名称, 仅仅需要时间戳和userstring, 文件序号需要PRU线程自己计算和添加
-    double sample_freq;//每个通道的采样频率
+    float sample_freq;//每个通道的采样频率
     bool AIN[11];//sensor采样通道情况,true表示采集, false表示不采集
     unsigned int sample_time_hours;//每个通道的时间长度
     unsigned int sample_time_minutes;//每个通道的时间长度

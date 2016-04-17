@@ -39,6 +39,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
     timer->start(1000 * 60);//一分钟更新一次时间
 
+    //doublespinbox补充配置代码
+    ui->doubleSpinBox->setMinimum(0.0);
+    ui->doubleSpinBox->setMaximum(5000);
+    ui->doubleSpinBox->setSingleStep(0.01);
+    ui->doubleSpinBox->setValue(100);
+
     //将参数界面2中的checkbox的槽函数连接
     connect(ui->checkBox, SIGNAL(stateChanged(int)), SLOT(checkbox_changed(int)));
     connect(ui->checkBox_2, SIGNAL(stateChanged(int)), SLOT(checkbox_2_changed(int)));
@@ -74,6 +80,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* 串口线程通知逻辑线程数据采集完成 */
     connect(uartthread, SIGNAL(send_to_logic_uart_sample_complete(int)), logicthread, SLOT(receive_task_report(int)), Qt::QueuedConnection);
+    connect(pruthread, SIGNAL(send_to_logic_pru_sample_complete(int)), logicthread, SLOT(receive_task_report(int)), Qt::QueuedConnection);
 
     /* 串口线程通知绘图选项卡进行绘图 */
     connect(uartthread, SIGNAL(send_to_plot_uart_curve()), uart_plot_widget, SLOT(recei_fro_uartthread()), Qt::QueuedConnection);
@@ -164,10 +171,10 @@ void MainWindow::on_pushButton_clicked()
     qDebug() << "user_string = " << gui_para.user_string;
 
     //checkbox不需要再次读取，槽函数中已经进行设置
-    for(int i = 0; i < 11; i++)
-    {
-        qDebug() << "AIN[" << i << "] = " << gui_para.AIN[i];
-    }
+//    for(int i = 0; i < 11; i++)
+//    {
+//        qDebug() << "AIN[" << i << "] = " << gui_para.AIN[i];
+//    }
 
     if(ui->radioButton_5->isChecked())
     {

@@ -159,7 +159,7 @@
         <height>141</height>
        </rect>
       </property>
-      <layout class="QGridLayout" name="gridLayout" columnstretch="1,0,0">
+      <layout class="QGridLayout" name="gridLayout" columnstretch="1,2,2">
        <item row="4" column="0">
         <widget class="QLabel" name="label_4">
          <property name="text">
@@ -296,9 +296,6 @@
          <property name="decimals">
           <number>2</number>
          </property>
-         <property name="maximum">
-          <double>999999.000000000000000</double>
-         </property>
          <property name="value">
           <double>0.000000000000000</double>
          </property>
@@ -426,7 +423,7 @@
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
       <property name="maximum">
-       <number>999999999</number>
+       <number>59</number>
       </property>
      </widget>
      <widget class="QSpinBox" name="spinBox_2">
@@ -442,7 +439,7 @@
        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
       </property>
       <property name="maximum">
-       <number>999999999</number>
+       <number>59</number>
       </property>
       <property name="value">
        <number>30</number>
