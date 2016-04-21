@@ -6,6 +6,7 @@
 #include "thread_dust_uart.h"
 #include "thread_logic_contrl.h"
 #include "uart_plot_widget.h"
+#include "pru_plot_widget.h"
 #include "thread_sensor_PRU.h"
 
 namespace Ui {
@@ -58,6 +59,7 @@ private:
     PRUThread *pruthread;//控制PRU采集数据
 
     Uart_Plot_Widget *uart_plot_widget;//串口数据绘图选项卡
+    PRU_Plot_Widget *pru_plot_widget;//pru数据绘图选项卡
 
 };
 

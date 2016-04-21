@@ -4,7 +4,10 @@
 #include <QDateTime>
 
 //读取界面参数并发通知逻辑线程开始数据采集
-GUI_Para gui_para;
+extern GUI_Para gui_para;
+
+//系统配置参数，保存于文件
+SYS_Para sys_para;
 
 LogicThread::LogicThread(QObject *parent) :
     QThread(parent)
@@ -103,7 +106,7 @@ void LogicThread::recei_parse_GUI_data()
     pru_sample_start.AIN[9] = gui_para.AIN[9];
     pru_sample_start.AIN[10] = gui_para.AIN[10];
 
-    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+    //emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
 
     emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
 

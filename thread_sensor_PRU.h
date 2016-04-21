@@ -1,7 +1,6 @@
 #ifndef THREAD_SENSOR_PRU_H
 #define THREAD_SENSOR_PRU_H
 
-
 #include <QThread>
 #include <QString>
 #include <QTimer>

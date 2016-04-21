@@ -21,7 +21,6 @@ protected:
 private:
     QColor color[10];
     PLOT_DATA_BUF Uart_Plot_Data_Buf;
-    unsigned int uart_data_plot_height;
 
 public slots:
     /* 接收来串口线程的数据绘图命令 */

@@ -33,11 +33,17 @@ unsigned int dataSize;
 unsigned int spiData[14];
 unsigned int timerData[2];
 unsigned int AIN_num;
+unsigned int AIN_num_temp;
 unsigned int sample_clock_period_per_seconds;//时间切割单元
 unsigned int sample_clock_time_integer;//整数部分
 unsigned int sample_clock_time_remainder;//余数部分
 float real_sample_freq;//由于延时的整数关系，有时候输入的频率会被修正
 
+//pru数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
+PLOT_DATA_BUF pru_plot_data_buf;
+
+//pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔
+unsigned int pru_plot_time_span;
 
 PRUThread::PRUThread(QObject *parent) :
     QThread(parent)
@@ -46,9 +52,21 @@ PRUThread::PRUThread(QObject *parent) :
     pru_sample_flag = false;
     Task_completed = UNDEFINED;
 
+    //pru数据的内存块，初始化
+    pru_plot_data_buf.p_data = NULL;
+    pru_plot_data_buf.pp_data = NULL;
+    pru_plot_data_buf.buf_size = 0;
+    pru_plot_data_buf.index = 0;
+    pru_plot_data_buf.valid_data_size = 0;
+
+    AIN_num = 0;
+    AIN_num_temp = 0;
+
     filename = NULL;
     fp_data_file = NULL;
     serial = 0;
+
+    pru_plot_time_span = PRU_PLOT_TIME_SPAN;
 }
 
 void PRUThread::run()
@@ -101,6 +119,14 @@ void PRUThread::run()
             if(prussdrv_pru_enable(CLK_PRU_NUM) == 0)
                  qDebug("The CLKPRU enable succeed!\n ");
 
+            /* 打开数据文件，将数据点降频读取到内存块中，并驱动绘图选项卡进行显示 */
+            /*
+             *  1、根据serial来判断当前的数据文件是4000000个数据还是sample_clock_time_remainder个数据
+                2、从文件读取display_size个数据点的时间跨度，
+                3、计算降频因子，读取数据到内存块
+            */
+
+
             /* 生成数据文件名称 */
             filename_serial = pru_sample_start.filename + QString::number(serial) + QString(".txt");
             qDebug() << "filename_serial = " << filename_serial;
@@ -118,22 +144,35 @@ void PRUThread::run()
                 qDebug("prussdrv_pru_clear_event failed!\n");
 
             if(prussdrv_pru_disable(ADC_PRU_NUM) == 0)
-                 printf("The ADCPRU disable succeed!\n");
+                qDebug("The ADCPRU disable succeed!\n");
             if(prussdrv_pru_disable(CLK_PRU_NUM) == 0)
-                 printf("The CLKPRU disable succeed!\n ");
+                qDebug("The CLKPRU disable succeed!\n ");
 
             /* 3、保存数据到文件 */
             if(save_data_to_file(filename, spiData[1] / 2, AIN_num) == SUCCESS)
                 qDebug("Data is saved in %s.\n", filename);
             else
                 qDebug("Data save error!\n");
-
-            /* 4、将数据文件读取到内存块中，准备绘图 */
         }
 
     }
 
     stopped = false;
+
+    //停止线程时必须释放申请的内存空间
+    if(pru_plot_data_buf.pp_data != NULL)
+    {
+        for(unsigned int i = 0; i < AIN_num; i++)//释放原来的AIN_num条内存块
+        {
+            free(pru_plot_data_buf.pp_data[i]);
+            pru_plot_data_buf.pp_data[i] = NULL;
+        }
+
+        free(pru_plot_data_buf.pp_data);
+        pru_plot_data_buf.pp_data = NULL;
+        qDebug() << "pru free memory before pruthread stop";
+    }
+
 
     qDebug("PRU thread stopped");
 }
@@ -168,11 +207,12 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     qDebug() << "pru_sample_start.AIN[9] = " << pru_sample_start.AIN[9];
     qDebug() << "pru_sample_start.AIN[10] = " << pru_sample_start.AIN[10];
 
-    AIN_num = 0;
+    /* 解析采样通道情况 */
+    AIN_num_temp = 0;
     for(i = 0; i < sizeof(pru_sample_start.AIN)/sizeof(bool); i++)
-        AIN_num += pru_sample_start.AIN[i];
+        AIN_num_temp += pru_sample_start.AIN[i];
 
-    qDebug() << "sample channels = " << AIN_num;
+    qDebug() << "total sample channels = " << AIN_num_temp;
 
     j = 0;
     for(i = 0; i < sizeof(pru_sample_start.AIN)/sizeof(bool); i++)
@@ -185,6 +225,54 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     }
     spiData[2+j] = 0;//截止通道标记
     qDebug("spiData[%d] = 0x%x\n", j+2, spiData[j+2]);
+
+    //逻辑线程要求的绘图尺寸和pru内存数据块大小不一致时必须重新分配内存块大小
+    if(pru_sample_start.display_size != pru_plot_data_buf.buf_size || AIN_num_temp != AIN_num)
+    {
+        //释放原来的内存空间
+        if(pru_plot_data_buf.pp_data != NULL)
+        {
+            for(i = 0; i < AIN_num; i++)//释放原来的AIN_num条内存块
+            {
+                free(pru_plot_data_buf.pp_data[i]);
+                pru_plot_data_buf.pp_data[i] = NULL;
+            }
+
+            free(pru_plot_data_buf.pp_data);
+            pru_plot_data_buf.pp_data = NULL;
+            qDebug() << "pru free last memory size";
+        }
+
+        //申请新的空间
+        pru_plot_data_buf.pp_data = (unsigned short int **)malloc(sizeof(unsigned short int *) * AIN_num_temp);
+        if(pru_plot_data_buf.pp_data)
+        {
+            for(i = 0; i < AIN_num_temp; i++)
+            {
+                pru_plot_data_buf.pp_data[i] = (unsigned short int *)malloc(sizeof(unsigned short int) * pru_sample_start.display_size);
+                memset(pru_plot_data_buf.pp_data[i], 0, sizeof(unsigned short int) * pru_sample_start.display_size);
+            }
+            qDebug("get new memory for pru plot buf");
+        }
+        else
+        {
+            qDebug("memory allocate again failed");
+        }
+    }
+    else//若大小相等，则内存块不需要重新申请，只需要将原来的内存空间写0即可，索引归0
+    {
+        for(i = 0; i < AIN_num_temp; i++)
+        {
+            memset(pru_plot_data_buf.pp_data[i], 0, sizeof(unsigned short int) * pru_sample_start.display_size);
+        }
+        qDebug() << "pru memory size equals!";
+    }
+
+    AIN_num = AIN_num_temp;
+    pru_plot_data_buf.buf_size = pru_sample_start.display_size;
+    pru_plot_data_buf.index = 0;
+    pru_plot_data_buf.valid_data_size = 0;
+    pru_plot_data_buf.filename = pru_sample_start.filename;
 
     /* 配置采样频率 */
     timerData[0] = (5 * 10000000) / (pru_sample_start.sample_freq * AIN_num) - 3;

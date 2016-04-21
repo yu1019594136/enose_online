@@ -11,7 +11,7 @@ Q_DECLARE_METATYPE(UART_SAMPLE_START)
 Q_DECLARE_METATYPE(PRU_SAMPLE_START)
 
 //读取界面参数并发通知逻辑线程开始数据采集
-extern GUI_Para gui_para;
+GUI_Para gui_para;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -28,7 +28,10 @@ MainWindow::MainWindow(QWidget *parent) :
     /* 实例化一个tab页用于绘图 */
     uart_plot_widget = new Uart_Plot_Widget(this);
     ui->tabWidget->addTab(uart_plot_widget, "uart curve");
-    //ui->Qtabwidget->addTab(plot_widget, "plot data");
+
+    /* 实例化一个tab页用于绘图 */
+    pru_plot_widget = new PRU_Plot_Widget(this);
+    ui->tabWidget->addTab(pru_plot_widget, "pru curve");
 
     /* 开机显示时间 */
     QDateTime datetime = QDateTime::currentDateTime();

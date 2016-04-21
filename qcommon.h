@@ -6,9 +6,13 @@
 
 /* 程序运行是所需要的一些配置文件存放路径 */
 #define E_NOSE_ONLINE_LOGO                  "/root/qi_enose_online/E-nose_online_Logo.png"
-#define UART_DATA_PLOT_HEIGHT               200
 #define PRUADC_BIN                          "/root/qi_enose_online/PRU_Code/PRUADC.bin"
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
+
+
+#define PRU_PLOT_TIME_SPAN                  100 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔
+#define UART_DATA_PLOT_HEIGHT               400
+
 
 //数据采集模式
 enum SAMPLE_MODE{
@@ -46,12 +50,13 @@ typedef struct{
 
 //串口数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 typedef struct{
-    unsigned short int *p_uart_data;    //内存块首地址
-    unsigned long int data_size;        //内存块大小
-    unsigned long int index;            //当前最新的数据项索引，循环更新时需要用到的索引,index指向最旧的数据，index-1表示最新的一个数据
-    unsigned long int valid_data_size;  //数据块中有效数据的个数
+    unsigned short int *p_data;    //内存块首地址
+    unsigned short int **pp_data;    //
+    unsigned long int buf_size;        //内存块大小
+    unsigned long int index;            //当前最新的数据项索引，循环更新时需要用到的索引,index指向最旧的数据，index-1表示最新的一个数据,index在0-data_size之间循环
+    unsigned long int valid_data_size;  //数据块中有效数据的个数,有效数据个数从0开始逐渐增长，最后保持在data_size大小，
     QString filename;   //绘图时在绘图选项卡上面标明数据文件名称
-} UART_PLOT_DATA_BUF;
+} PLOT_DATA_BUF;
 
 //逻辑线程通知PRU线程开始采集数据
 typedef struct{
@@ -91,5 +96,11 @@ typedef struct{
     int sample_mode;
 
 } GUI_Para;
+
+//系统配置参数，保存于文件
+typedef struct{
+    unsigned int time_span_pru_plot;//绘制PRU数据曲线时，数据点横跨的时间尺度，此参数用于计算降频频率
+
+} SYS_Para;
 
 #endif // QCOMMON_H
