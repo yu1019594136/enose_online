@@ -65,6 +65,7 @@ PRUThread::PRUThread(QObject *parent) :
     filename = NULL;
     fp_data_file = NULL;
     serial = 0;
+    sample_time_per_section = 0;
 
     pru_plot_time_span = PRU_PLOT_TIME_SPAN;
 }
@@ -98,12 +99,14 @@ void PRUThread::run()
                 spiData[1] = dataSize;
                 qDebug("this is %u clock period", sample_clock_time_integer);
                 sample_clock_time_integer--;
+                sample_time_per_section = sample_clock_period_per_seconds;
                 serial++;
             }
             else if(sample_clock_time_remainder != 0)//只有最后一段计时余数
             {
                 qDebug("there is %u seconds, less than a clock period", sample_clock_time_remainder);
                 spiData[1] = sample_clock_time_remainder * real_sample_freq * AIN_num * 2;
+                sample_time_per_section = sample_clock_time_remainder;
                 sample_clock_time_remainder = 0;
                 serial++;
             }
@@ -119,17 +122,9 @@ void PRUThread::run()
             if(prussdrv_pru_enable(CLK_PRU_NUM) == 0)
                  qDebug("The CLKPRU enable succeed!\n ");
 
-            /* 打开数据文件，将数据点降频读取到内存块中，并驱动绘图选项卡进行显示 */
-            /*
-             *  1、根据serial来判断当前的数据文件是4000000个数据还是sample_clock_time_remainder个数据
-                2、从文件读取display_size个数据点的时间跨度，
-                3、计算降频因子，读取数据到内存块
-            */
-
-
             /* 生成数据文件名称 */
             filename_serial = pru_sample_start.filename + QString::number(serial) + QString(".txt");
-            qDebug() << "filename_serial = " << filename_serial;
+            //qDebug() << "filename_serial = " << filename_serial;
 
             //准备数据保存文件名char
             ba = filename_serial.toLatin1();
@@ -149,7 +144,7 @@ void PRUThread::run()
                 qDebug("The CLKPRU disable succeed!\n ");
 
             /* 3、保存数据到文件 */
-            if(save_data_to_file(filename, spiData[1] / 2, AIN_num) == SUCCESS)
+            if(save_data_to_file(filename, spiData[1] / 2, AIN_num, serial, sample_time_per_section) == SUCCESS)
                 qDebug("Data is saved in %s.\n", filename);
             else
                 qDebug("Data save error!\n");
@@ -189,23 +184,23 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
 
     pru_sample_start = Pru_sample_start;
 
-    qDebug() << "pru_sample_start.display_size = " << pru_sample_start.display_size;
-    qDebug() << "pru_sample_start.filename = " << pru_sample_start.filename;
-    qDebug() << "pru_sample_start.sample_time_hours = " << pru_sample_start.sample_time_hours;
-    qDebug() << "pru_sample_start.sample_time_minutes = " << pru_sample_start.sample_time_minutes;
-    qDebug() << "pru_sample_start.sample_time_seconds = " << pru_sample_start.sample_time_seconds;
-    qDebug() << "pru_sample_start.sample_freq = " << pru_sample_start.sample_freq;
-    qDebug() << "pru_sample_start.AIN[0] = " << pru_sample_start.AIN[0];
-    qDebug() << "pru_sample_start.AIN[1] = " << pru_sample_start.AIN[1];
-    qDebug() << "pru_sample_start.AIN[2] = " << pru_sample_start.AIN[2];
-    qDebug() << "pru_sample_start.AIN[3] = " << pru_sample_start.AIN[3];
-    qDebug() << "pru_sample_start.AIN[4] = " << pru_sample_start.AIN[4];
-    qDebug() << "pru_sample_start.AIN[5] = " << pru_sample_start.AIN[5];
-    qDebug() << "pru_sample_start.AIN[6] = " << pru_sample_start.AIN[6];
-    qDebug() << "pru_sample_start.AIN[7] = " << pru_sample_start.AIN[7];
-    qDebug() << "pru_sample_start.AIN[8] = " << pru_sample_start.AIN[8];
-    qDebug() << "pru_sample_start.AIN[9] = " << pru_sample_start.AIN[9];
-    qDebug() << "pru_sample_start.AIN[10] = " << pru_sample_start.AIN[10];
+//    qDebug() << "pru_sample_start.display_size = " << pru_sample_start.display_size;
+//    qDebug() << "pru_sample_start.filename = " << pru_sample_start.filename;
+//    qDebug() << "pru_sample_start.sample_time_hours = " << pru_sample_start.sample_time_hours;
+//    qDebug() << "pru_sample_start.sample_time_minutes = " << pru_sample_start.sample_time_minutes;
+//    qDebug() << "pru_sample_start.sample_time_seconds = " << pru_sample_start.sample_time_seconds;
+//    qDebug() << "pru_sample_start.sample_freq = " << pru_sample_start.sample_freq;
+//    qDebug() << "pru_sample_start.AIN[0] = " << pru_sample_start.AIN[0];
+//    qDebug() << "pru_sample_start.AIN[1] = " << pru_sample_start.AIN[1];
+//    qDebug() << "pru_sample_start.AIN[2] = " << pru_sample_start.AIN[2];
+//    qDebug() << "pru_sample_start.AIN[3] = " << pru_sample_start.AIN[3];
+//    qDebug() << "pru_sample_start.AIN[4] = " << pru_sample_start.AIN[4];
+//    qDebug() << "pru_sample_start.AIN[5] = " << pru_sample_start.AIN[5];
+//    qDebug() << "pru_sample_start.AIN[6] = " << pru_sample_start.AIN[6];
+//    qDebug() << "pru_sample_start.AIN[7] = " << pru_sample_start.AIN[7];
+//    qDebug() << "pru_sample_start.AIN[8] = " << pru_sample_start.AIN[8];
+//    qDebug() << "pru_sample_start.AIN[9] = " << pru_sample_start.AIN[9];
+//    qDebug() << "pru_sample_start.AIN[10] = " << pru_sample_start.AIN[10];
 
     /* 解析采样通道情况 */
     AIN_num_temp = 0;
@@ -220,11 +215,11 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
         if(pru_sample_start.AIN[i])
         {
             spiData[2 + (j++)] = (i << 28) | 0x0c000000;
-            qDebug("spiData[%d] = 0x%x\n", j+1, spiData[j+1]) ;//
+            //qDebug("spiData[%d] = 0x%x\n", j+1, spiData[j+1]) ;//
         }
     }
     spiData[2+j] = 0;//截止通道标记
-    qDebug("spiData[%d] = 0x%x\n", j+2, spiData[j+2]);
+    //qDebug("spiData[%d] = 0x%x\n", j+2, spiData[j+2]);
 
     //逻辑线程要求的绘图尺寸和pru内存数据块大小不一致时必须重新分配内存块大小
     if(pru_sample_start.display_size != pru_plot_data_buf.buf_size || AIN_num_temp != AIN_num)
@@ -292,6 +287,7 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     filename = NULL;
     fp_data_file = NULL;
     serial = 0;
+    sample_time_per_section = 0;
 
     //开始采样
     pru_sample_flag = true;
@@ -384,12 +380,12 @@ unsigned int readFileValue(char filename[])
 }
 
 /* 保存数据到文件 */
-int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM)
+int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section)
 {
     /*--------------------------保存数据相关------------------------------------------*/
      int mmap_fd;
      FILE *fp_data_file;
-     unsigned int i = 0;
+     unsigned int i = 0, j = 0, start_index = 0;
      void *map_base, *virt_addr;
      unsigned int num = 0;
      off_t target = addr;
@@ -407,12 +403,14 @@ int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigne
       return ERROR;
    }
 
+   //保存数据到文件
    fp_data_file = fopen(filename, "w");
 
+   target = addr;
+   num = 0;
    for(i = 0; i < numberOutputSamples; i++)
    {
        virt_addr = map_base + (target & MAP_MASK);
-       //read_result = *((uint16_t *) virt_addr);
        num++;
        if(num % AIN_NUM == 0)
            fprintf(fp_data_file, "%u\n", *((uint16_t *) virt_addr));
@@ -422,6 +420,83 @@ int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigne
        target+=2;// 2 bytes per sample
    }
 
+   //选取数据到内存块
+   unsigned int factor = 0;//分频因子
+   target = addr;
+
+   //计算分频因子
+   qDebug("Sample_time_per_section = %u", Sample_time_per_section);
+   factor = (pru_plot_time_span * numberOutputSamples) / (Sample_time_per_section * pru_plot_data_buf.buf_size * AIN_NUM);
+   qDebug("factor = %d", factor);
+
+   if(pru_plot_time_span >= Sample_time_per_section)
+   {
+        for(i = 0; i < numberOutputSamples / AIN_NUM; i++)
+        {
+            if(i % factor == 0)//如果i能被factor整除，则
+            {
+                for(j = 0; j < AIN_NUM; j++)//copy data
+                {
+                    pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = *((uint16_t *) (map_base + ((target + (i * AIN_NUM + j) * 2) & MAP_MASK)));
+
+                }
+
+                pru_plot_data_buf.index++;
+                if(pru_plot_data_buf.index == pru_plot_data_buf.buf_size)
+                    pru_plot_data_buf.index = 0;
+
+                if(pru_plot_data_buf.valid_data_size < pru_plot_data_buf.buf_size)
+                    pru_plot_data_buf.valid_data_size++;
+            }
+        }
+   }
+   else
+   {
+       start_index = ((Sample_time_per_section - pru_plot_time_span) * (numberOutputSamples / AIN_NUM)) / Sample_time_per_section;
+       qDebug("start_index = %u", start_index);
+
+       for(i = start_index; i < numberOutputSamples / AIN_NUM; i++)
+       {
+           if(i % factor == 0)//如果i能被factor整除，则
+           {
+               for(j = 0; j < AIN_NUM; j++)//copy data
+               {
+                   pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = *((uint16_t *) (map_base + ((target + (i * AIN_NUM + j) * 2) & MAP_MASK)));
+
+               }
+
+               pru_plot_data_buf.index++;
+               if(pru_plot_data_buf.index == pru_plot_data_buf.buf_size)
+                   pru_plot_data_buf.index = 0;
+
+               if(pru_plot_data_buf.valid_data_size < pru_plot_data_buf.buf_size)
+                   pru_plot_data_buf.valid_data_size++;
+           }
+       }
+
+   }
+
+//   //将内存块内容保存到文件做检查
+//   char filepath[50] = {0};
+//   sprintf(filepath, "record%u.txt", Serial);
+//   FILE *fp_memory_data;
+
+//   qDebug("which data is oldest data in data.txt");
+//   qDebug("pru_plot_data_buf.index = %lu", pru_plot_data_buf.index);
+
+//    fp_memory_data = fopen(filepath, "w");
+
+//    for(i = 0; i < pru_plot_data_buf.buf_size; i++)
+//    {
+//        for(j = 0; j < AIN_NUM; j++)
+//        {
+//            fprintf(fp_memory_data, "%u\t", pru_plot_data_buf.pp_data[j][i]);
+//        }
+//        fprintf(fp_memory_data, "\n");
+//    }
+//    fclose(fp_memory_data);
+
+   //清理工作
    if(munmap(map_base, MAP_SIZE) == -1)
    {
       qDebug("Failed to unmap memory");

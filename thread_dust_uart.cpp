@@ -54,7 +54,7 @@ void UartThread::run()
 
                 //读取到数据后先存放到p+3
                 read(fd_uart, uart_data_buffer+3, 1);
-                qDebug("uart_data_buffer[3] = 0x%x", uart_data_buffer[3]);
+                //qDebug("uart_data_buffer[3] = 0x%x", uart_data_buffer[3]);
 
                 //后三个数据依次往前移动一位
                 uart_data_buffer[0] = uart_data_buffer[1];

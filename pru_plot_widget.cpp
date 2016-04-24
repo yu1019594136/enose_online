@@ -142,7 +142,7 @@ void PRU_Plot_Widget::paintEvent(QPaintEvent *event)
 
         if(pic.load(QString(E_NOSE_ONLINE_LOGO)))
         {
-            qDebug() << "picture size:" << pic.size() << endl;
+            //qDebug() << "picture size:" << pic.size() << endl;
             painter.drawImage(QPoint(30, 30), pic);
         }
 

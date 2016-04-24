@@ -73,7 +73,11 @@ private:
     char *filename;     //保存文件名称
     QByteArray ba;
     QString filename_serial;//
+    //record sample times when task starts
     unsigned int serial;
+
+    //每阶段的采样时间长度
+    unsigned int sample_time_per_section;
 
 signals:
     void send_to_logic_pru_sample_complete(int task_completed);
@@ -94,6 +98,6 @@ void PRU_init_loadcode();
 unsigned int readFileValue(char filename[]);
 
 /* 保存数据到文件 */
-int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM);
+int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section);
 
 #endif // THREAD_SENSOR_PRU_H

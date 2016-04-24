@@ -46,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->doubleSpinBox->setMinimum(0.0);
     ui->doubleSpinBox->setMaximum(5000);
     ui->doubleSpinBox->setSingleStep(0.01);
-    ui->doubleSpinBox->setValue(100);
+    ui->doubleSpinBox->setValue(5000);
 
     //将参数界面2中的checkbox的槽函数连接
     connect(ui->checkBox, SIGNAL(stateChanged(int)), SLOT(checkbox_changed(int)));
