@@ -7,6 +7,8 @@
 /*-----------------plot-----------------*/
 //pru数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 extern PLOT_DATA_BUF pru_plot_data_buf;
+extern unsigned int AIN_num;
+
 
 PRU_Plot_Widget::PRU_Plot_Widget(QWidget *parent)
 {
@@ -44,11 +46,7 @@ Qt::color1      1           1 pixel value (for bitmaps)
     color[7] = Qt::gray;
     color[8] = Qt::darkBlue;
     color[9] = Qt::darkRed;
-
-    /* 默认情况下，横坐标和纵坐标等于屏幕的宽、高像素点 */
-//    plot_para.height = 65536;
-//    plot_para.width = 1000;
-//    plot_para.p_data = NULL;
+    color[10] = Qt::darkGreen;
 
     PRU_Plot_Data_Buf.p_data = NULL;
     PRU_Plot_Data_Buf.pp_data = NULL;
@@ -61,15 +59,15 @@ Qt::color1      1           1 pixel value (for bitmaps)
 void PRU_Plot_Widget::recei_fro_pruthread()
 {
     /*
-     * pru线程和绘图选项卡最好分别有一份自己的绘图数据，串口线程随时对PRU_plot_data_buf进行修改，如果用
+     * pru线程和绘图选项卡最好分别有一份自己的绘图数据，pru线程随时对PRU_plot_data_buf进行修改，如果用
      * 户同时点开了绘图选项卡那么绘图事件中将同时不断读取PRU_plot_data_buf的内容，从而容易发生错误，因此两者最好
      * 各自有一份自己的数据
     */
     PRU_Plot_Data_Buf = pru_plot_data_buf;
 
-    //qDebug("plot para received, index = %lu valid_data_size = %lu, ", PRU_Plot_Data_Buf.index, PRU_Plot_Data_Buf.valid_data_size);
+    qDebug("pru plot para received, index = %lu valid_data_size = %lu, ", PRU_Plot_Data_Buf.index, PRU_Plot_Data_Buf.valid_data_size);
 
-    if(PRU_Plot_Data_Buf.valid_data_size == 0 || PRU_Plot_Data_Buf.p_data == NULL)//没有有效数据或者指针为空则不应该绘图
+    if(PRU_Plot_Data_Buf.valid_data_size == 0 || PRU_Plot_Data_Buf.pp_data == NULL)//没有有效数据或者指针为空则不应该绘图
     {
         qDebug() << "PRU_Plot_Data_Buf.valid_data_size = 0 or PRU_Plot_Data_Buf.p_PRU_data = NULL";
     }
@@ -81,12 +79,12 @@ void PRU_Plot_Widget::recei_fro_pruthread()
 
 void PRU_Plot_Widget::paintEvent(QPaintEvent *event)
 {
-    unsigned long int i,j;
+    unsigned long int i,j,k;
 
     QPainter painter(this);
 
     /* 开机时候有可能点开绘图选项卡，此时会执行绘图事件，所以绘图时间函数中也应该对指针进行判断 */
-    if(PRU_Plot_Data_Buf.valid_data_size != 0 && PRU_Plot_Data_Buf.p_data != NULL)
+    if(PRU_Plot_Data_Buf.valid_data_size != 0 && PRU_Plot_Data_Buf.pp_data != NULL)
     {
 /*
 ("Bitstream Charter", "Clean", "Clearlyu", "Clearlyu Alternate Glyphs", "Clearlyu Arabic",
@@ -106,36 +104,41 @@ void PRU_Plot_Widget::paintEvent(QPaintEvent *event)
         /* 坐标系平移 */
         painter.translate(0, PRU_DATA_PLOT_HEIGHT);
 
-        //qDebug("height = %u, width = %lu\n", PRU_DATA_PLOT_HEIGHT, PRU_Plot_Data_Buf.data_size);
-
-        painter.setPen(QPen(color[1]));//red color
-
-        //QPainterPath path;
-
-        if(PRU_Plot_Data_Buf.valid_data_size < PRU_Plot_Data_Buf.buf_size)//有效数据个数少于内存块大小时
+        if(PRU_Plot_Data_Buf.valid_data_size < PRU_Plot_Data_Buf.buf_size)//有效数据个数少于内存块大小时painter.drawPoint(i, -PRU_Plot_Data_Buf.pp_data[j][i]);
         {
-            for(i = 0; i < PRU_Plot_Data_Buf.valid_data_size; i++)
+            for(i = 0; i < AIN_num; i++)
             {
-                painter.drawPoint(i, -PRU_Plot_Data_Buf.p_data[i]);
+                painter.setPen(QPen(color[i]));
+
+                for(j = 0; j < PRU_Plot_Data_Buf.valid_data_size; j++)
+                {
+                    painter.drawPoint(j, -PRU_Plot_Data_Buf.pp_data[i][j]);
+                }
             }
         }
         else//有效数据个数等于内存块大小时
         {
-            j = 0;
-            for(i = PRU_Plot_Data_Buf.index; i < PRU_Plot_Data_Buf.buf_size; i++)
+            for(i = 0; i < AIN_num; i++)
             {
-                painter.drawPoint(j++, -PRU_Plot_Data_Buf.p_data[i]);
-            }
+                k = 0;
 
-            for(i = 0; i < PRU_Plot_Data_Buf.index; i++)
-            {
-                painter.drawPoint(j++, -PRU_Plot_Data_Buf.p_data[i]);
+                painter.setPen(QPen(color[i]));
+
+                for(j = PRU_Plot_Data_Buf.index; j < PRU_Plot_Data_Buf.buf_size; j++)
+                {
+                    painter.drawPoint(k++, -PRU_Plot_Data_Buf.pp_data[i][j]);
+                }
+
+                for(j = 0; j < PRU_Plot_Data_Buf.index; j++)
+                {
+                    painter.drawPoint(k++, -PRU_Plot_Data_Buf.pp_data[i][j]);
+                }
             }
         }
     }
     else
     {
-        qDebug("PRU_Plot_Data_Buf.valid_data_size = 0 or PRU_Plot_Data_Buf.p_PRU_data = NULL, cann't plot!\n");
+        //qDebug("PRU_Plot_Data_Buf.valid_data_size = 0 or PRU_Plot_Data_Buf.p_PRU_data = NULL, cann't plot!\n");
 
         /* 不显示数据时，显示一张图片 */
         QImage pic;

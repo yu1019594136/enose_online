@@ -72,7 +72,7 @@ private:
     FILE *fp_data_file;   //数据文件句柄
     char *filename;     //保存文件名称
     QByteArray ba;
-    QString filename_serial;//
+    //QString filename_serial;//
     //record sample times when task starts
     unsigned int serial;
 
@@ -81,6 +81,9 @@ private:
 
 signals:
     void send_to_logic_pru_sample_complete(int task_completed);
+
+    //通知绘图选项卡开始绘制曲线
+    void send_to_plot_pru_curve();
 
 public slots:
     //接收逻辑线程发过来的参数

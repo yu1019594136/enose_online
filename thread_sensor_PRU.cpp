@@ -90,7 +90,7 @@ void PRUThread::run()
 
                 pru_sample_flag = false;
                 Task_completed = PRU_COMPLETED;
-                emit send_to_logic_pru_sample_complete(Task_completed);
+                emit send_to_logic_pru_sample_complete(Task_completed);//采样结束，发送信号通知逻辑线程
 
                 break;
             }
@@ -123,11 +123,11 @@ void PRUThread::run()
                  qDebug("The CLKPRU enable succeed!\n ");
 
             /* 生成数据文件名称 */
-            filename_serial = pru_sample_start.filename + QString::number(serial) + QString(".txt");
+            pru_plot_data_buf.filename = pru_sample_start.filename + QString::number(serial) + QString(".txt");
             //qDebug() << "filename_serial = " << filename_serial;
 
             //准备数据保存文件名char
-            ba = filename_serial.toLatin1();
+            ba = pru_plot_data_buf.filename.toLatin1();
             filename = ba.data();
 
             event_num = prussdrv_pru_wait_event (PRU_EVTOUT_0);//等待采样结束, 阻塞函数
@@ -143,11 +143,15 @@ void PRUThread::run()
             if(prussdrv_pru_disable(CLK_PRU_NUM) == 0)
                 qDebug("The CLKPRU disable succeed!\n ");
 
-            /* 3、保存数据到文件 */
+            /* 3、保存数据到文件, 并将绘图数据拷贝到内存块 */
             if(save_data_to_file(filename, spiData[1] / 2, AIN_num, serial, sample_time_per_section) == SUCCESS)
                 qDebug("Data is saved in %s.\n", filename);
             else
                 qDebug("Data save error!\n");
+
+            /* 4, 发送信号驱动绘图选项卡开始绘图 */
+            emit send_to_plot_pru_curve();
+
         }
 
     }
@@ -268,6 +272,9 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     pru_plot_data_buf.index = 0;
     pru_plot_data_buf.valid_data_size = 0;
     pru_plot_data_buf.filename = pru_sample_start.filename;
+
+    /* 主要用于更新绘图选项卡中自带的PRU_Plot_Data_Buf数据 */
+    emit send_to_plot_pru_curve();
 
     /* 配置采样频率 */
     timerData[0] = (5 * 10000000) / (pru_sample_start.sample_freq * AIN_num) - 3;
@@ -453,7 +460,7 @@ int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigne
    else
    {
        start_index = ((Sample_time_per_section - pru_plot_time_span) * (numberOutputSamples / AIN_NUM)) / Sample_time_per_section;
-       qDebug("start_index = %u", start_index);
+       //qDebug("start_index = %u", start_index);
 
        for(i = start_index; i < numberOutputSamples / AIN_NUM; i++)
        {

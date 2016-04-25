@@ -10,7 +10,7 @@
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
 
 
-#define PRU_PLOT_TIME_SPAN                  60 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
+#define PRU_PLOT_TIME_SPAN                  100 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               400 //
 
 

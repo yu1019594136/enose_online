@@ -88,6 +88,9 @@ MainWindow::MainWindow(QWidget *parent) :
     /* 串口线程通知绘图选项卡进行绘图 */
     connect(uartthread, SIGNAL(send_to_plot_uart_curve()), uart_plot_widget, SLOT(recei_fro_uartthread()), Qt::QueuedConnection);
 
+    /* pru线程通知绘图选项卡进行绘图 */
+    connect(pruthread, SIGNAL(send_to_plot_pru_curve()), pru_plot_widget, SLOT(recei_fro_pruthread()), Qt::QueuedConnection);
+
     /* 逻辑线程通知pru线程开始采集数据 */
     connect(logicthread, SIGNAL(send_to_pruthread_pru_sample_start(PRU_SAMPLE_START)), pruthread, SLOT(recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START)), Qt::QueuedConnection);
 

@@ -5,8 +5,6 @@
 #include "common.h"
 #include "qcommon.h"
 
-//#define WIDTH 1000      //将宽度等分成WIDTH份
-//#define HEIGHT 65536     //将高度等分成HEIGH份
 #define PRU_DATA_PLOT_HEIGHT 65536
 
 class PRU_Plot_Widget : public QWidget
@@ -20,7 +18,7 @@ protected:
     void paintEvent(QPaintEvent *event);
 
 private:
-    QColor color[10];
+    QColor color[11];
     PLOT_DATA_BUF PRU_Plot_Data_Buf;
 
 public slots:

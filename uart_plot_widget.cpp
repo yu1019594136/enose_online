@@ -136,7 +136,7 @@ void Uart_Plot_Widget::paintEvent(QPaintEvent *event)
     }
     else
     {
-        qDebug("Uart_Plot_Data_Buf.valid_data_size = 0 or Uart_Plot_Data_Buf.p_uart_data = NULL, cann't plot!\n");
+        //qDebug("Uart_Plot_Data_Buf.valid_data_size = 0 or Uart_Plot_Data_Buf.p_uart_data = NULL, cann't plot!\n");
 
         /* 不显示数据时，显示一张图片 */
         QImage pic;
