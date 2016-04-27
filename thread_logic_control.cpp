@@ -24,6 +24,9 @@ void LogicThread::run()
 {
     qDebug("logic thread starts\n");
 
+    /* 从系统参数文件中读取配置参数，保存到sys_para */
+    // do something....
+
     usleep(100000);
 
     while(!stopped)

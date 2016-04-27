@@ -17,6 +17,8 @@
 #define MAP_SIZE 0x0FFFFFFF
 #define MAP_MASK (MAP_SIZE - 1)
 
+#define MAX_BUFFER_SIZE 4000000 //unsigned short int
+
 /* FREQ_xHz = delay
 如何根据所需要的Hz，计算出n？
 delay + 3 = (5 * 10^7) / f
@@ -74,10 +76,15 @@ private:
     QByteArray ba;
     //QString filename_serial;//
     //record sample times when task starts
-    unsigned int serial;
+//    unsigned int serial;
+
+    volatile bool pru_sample_end;
 
     //每阶段的采样时间长度
     unsigned int sample_time_per_section;
+
+    unsigned int last_sample_time_per_section;
+    unsigned int last_spiData_1;
 
 signals:
     void send_to_logic_pru_sample_complete(int task_completed);
@@ -101,6 +108,9 @@ void PRU_init_loadcode();
 unsigned int readFileValue(char filename[]);
 
 /* 保存数据到文件 */
-int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section);
+int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section);
+
+/* 拷贝数据到临时内存 */
+int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte);
 
 #endif // THREAD_SENSOR_PRU_H

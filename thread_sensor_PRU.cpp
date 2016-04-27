@@ -27,7 +27,7 @@
 
 /* DDR地址 */
 unsigned int addr;
-unsigned int dataSize;
+unsigned int dataSize;// units byte
 
 /* 采样配置相关数据 */
 unsigned int spiData[14];
@@ -42,14 +42,23 @@ float real_sample_freq;//由于延时的整数关系，有时候输入的频率�
 //pru数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 PLOT_DATA_BUF pru_plot_data_buf;
 
+//快速拷贝时的临时存储区域
+unsigned short int mem_buffer[MAX_BUFFER_SIZE] = {0};
+
+//保存从文件中读取的配置参数
+extern SYS_Para sys_para;
 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔
 unsigned int pru_plot_time_span;
+unsigned int pru_memory_size;
+
+unsigned int serial;
 
 PRUThread::PRUThread(QObject *parent) :
     QThread(parent)
 {
     stopped = false;
     pru_sample_flag = false;
+    pru_sample_end = false;
     Task_completed = UNDEFINED;
 
     //pru数据的内存块，初始化
@@ -66,8 +75,12 @@ PRUThread::PRUThread(QObject *parent) :
     fp_data_file = NULL;
     serial = 0;
     sample_time_per_section = 0;
+    last_sample_time_per_section = 0;
+    last_spiData_1 = 0;
 
-    pru_plot_time_span = PRU_PLOT_TIME_SPAN;
+    pru_plot_time_span = PRU_PLOT_TIME_SPAN;// = sys_para.time_span_pru_plot
+    //pru_memory_size = PRU_MEMORY_SIZE;// = sys_para.pru_memory_size
+
 }
 
 void PRUThread::run()
@@ -86,71 +99,106 @@ void PRUThread::run()
             /* 1、确定spiData[1]的空间大小。即确定单次采样时间 */
             if(sample_clock_time_integer == 0 && sample_clock_time_remainder == 0)//采样已经完成，应该跳出循环
             {
-                qDebug("time is up! pru sample task is completed!");
-
                 pru_sample_flag = false;
-                Task_completed = PRU_COMPLETED;
-                emit send_to_logic_pru_sample_complete(Task_completed);//采样结束，发送信号通知逻辑线程
-
-                break;
+                pru_sample_end = true;
+                //break;
             }
             else if(sample_clock_time_integer != 0)//还有计时单元
             {
+                last_sample_time_per_section = sample_time_per_section;
+                last_spiData_1 = spiData[1];
+
                 spiData[1] = dataSize;
                 qDebug("this is %u clock period", sample_clock_time_integer);
                 sample_clock_time_integer--;
                 sample_time_per_section = sample_clock_period_per_seconds;
-                serial++;
             }
             else if(sample_clock_time_remainder != 0)//只有最后一段计时余数
             {
+                last_sample_time_per_section = sample_time_per_section;
+                last_spiData_1 = spiData[1];
+
                 qDebug("there is %u seconds, less than a clock period", sample_clock_time_remainder);
                 spiData[1] = sample_clock_time_remainder * real_sample_freq * AIN_num * 2;
                 sample_time_per_section = sample_clock_time_remainder;
                 sample_clock_time_remainder = 0;
-                serial++;
             }
 
-            /* 2、将配置数据写入PRU的DATA RAM，启动采样 */
-            /* 写入配置数据到DATA RAM */
-            prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, spiData, sizeof(spiData));  // spi config
-            prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, timerData, sizeof(timerData)); // sample config
+            if(!pru_sample_end)
+            {
+                /* 2、将配置数据写入PRU的DATA RAM，启动采样 */
+                /* 写入配置数据到DATA RAM */
+                prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, spiData, sizeof(spiData));  // spi config
+                prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, timerData, sizeof(timerData)); // sample config
 
-            /* 使能PRU运行采样程序 */
-            if(prussdrv_pru_enable(ADC_PRU_NUM) == 0)
-                 qDebug("The ADCPRU enable succeed!\n");
-            if(prussdrv_pru_enable(CLK_PRU_NUM) == 0)
-                 qDebug("The CLKPRU enable succeed!\n ");
+                /* 使能PRU运行采样程序 */
+                if(prussdrv_pru_enable(ADC_PRU_NUM) == 0)
+                     qDebug("The ADCPRU enable succeed!\n");
+                if(prussdrv_pru_enable(CLK_PRU_NUM) == 0)
+                     qDebug("The CLKPRU enable succeed!\n ");
+            }
 
-            /* 生成数据文件名称 */
-            pru_plot_data_buf.filename = pru_sample_start.filename + QString::number(serial) + QString(".txt");
-            //qDebug() << "filename_serial = " << filename_serial;
+            if(serial > 0)
+            {
+                /* 生成数据文件名称 */
+                pru_plot_data_buf.filename = pru_sample_start.filename + QString::number(serial) + QString(".txt");
+                qDebug() << "pru_plot_data_buf.filename = " << pru_plot_data_buf.filename;
 
-            //准备数据保存文件名char
-            ba = pru_plot_data_buf.filename.toLatin1();
-            filename = ba.data();
+                //准备数据保存文件名char
+//                ba = pru_plot_data_buf.filename.toLatin1();
+//                filename = ba.data();
 
-            event_num = prussdrv_pru_wait_event (PRU_EVTOUT_0);//等待采样结束, 阻塞函数
-            qDebug("ADC PRU0 program completed, event number %d.\n", event_num);
+//                last_sample_time_per_section;
+//                last_spiData_1
 
-            if(prussdrv_pru_clear_event (PRU_EVTOUT_0, PRU0_ARM_INTERRUPT) == 0)
-                qDebug("prussdrv_pru_clear_event success\n");
+//                /* 保存数据到文件, 并将绘图数据拷贝到内存块 */
+//                if(save_and_plot_data(filename, spiData[1] / 2, AIN_num, serial, sample_time_per_section) == SUCCESS)
+//                    qDebug("Data is saved in %s.\n", filename);
+//                else
+//                    qDebug("Data save error!\n");
+
+                /* 发送信号驱动绘图选项卡开始绘图 */
+//                emit send_to_plot_pru_curve();
+
+                //sample task end ?
+                if(pru_sample_end)
+                {
+                    qDebug("time is up! pru sample task is completed!");
+                    Task_completed = PRU_COMPLETED;
+                    emit send_to_logic_pru_sample_complete(Task_completed);//采样结束，发送信号通知逻辑线程
+                    break;
+                }
+                else
+                {
+                    qDebug("sample times: serial = %u", serial);
+                }
+            }
             else
-                qDebug("prussdrv_pru_clear_event failed!\n");
+            {
+                qDebug("No data to store for the first time.");
+            }
 
-            if(prussdrv_pru_disable(ADC_PRU_NUM) == 0)
-                qDebug("The ADCPRU disable succeed!\n");
-            if(prussdrv_pru_disable(CLK_PRU_NUM) == 0)
-                qDebug("The CLKPRU disable succeed!\n ");
+            if(pru_sample_flag)
+            {
+                event_num = prussdrv_pru_wait_event (PRU_EVTOUT_0);//等待采样结束, 阻塞函数
+                qDebug("ADC PRU0 program completed, event number %d.\n", event_num);
 
-            /* 3、保存数据到文件, 并将绘图数据拷贝到内存块 */
-            if(save_data_to_file(filename, spiData[1] / 2, AIN_num, serial, sample_time_per_section) == SUCCESS)
-                qDebug("Data is saved in %s.\n", filename);
-            else
-                qDebug("Data save error!\n");
+                if(prussdrv_pru_clear_event (PRU_EVTOUT_0, PRU0_ARM_INTERRUPT) == 0)
+                    qDebug("prussdrv_pru_clear_event success\n");
+                else
+                    qDebug("prussdrv_pru_clear_event failed!\n");
 
-            /* 4, 发送信号驱动绘图选项卡开始绘图 */
-            emit send_to_plot_pru_curve();
+                if(prussdrv_pru_disable(ADC_PRU_NUM) == 0)
+                    qDebug("The ADCPRU disable succeed!\n");
+                if(prussdrv_pru_disable(CLK_PRU_NUM) == 0)
+                    qDebug("The CLKPRU disable succeed!\n ");
+
+                //fast memroy copy, prepare parameters for file saving
+                if(copy_data_to_buf(mem_buffer, spiData[1]) == SUCCESS)//spiData[1] unit bytes
+                    qDebug("%u (bytes) data is copied", spiData[1]);
+
+                serial++;
+            }
 
         }
 
@@ -295,10 +343,13 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     fp_data_file = NULL;
     serial = 0;
     sample_time_per_section = 0;
+    last_sample_time_per_section = 0;
+    last_spiData_1 = 0;
+    spiData[1] = 0;
 
     //开始采样
     pru_sample_flag = true;
-
+    pru_sample_end = false;
 }
 
 /* PRU初始化，下载PRU代码到Instruction data ram中 */
@@ -387,7 +438,7 @@ unsigned int readFileValue(char filename[])
 }
 
 /* 保存数据到文件 */
-int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section)
+int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section)
 {
     /*--------------------------保存数据相关------------------------------------------*/
      int mmap_fd;
@@ -514,4 +565,86 @@ int save_data_to_file(char * filename, unsigned int numberOutputSamples, unsigne
    fclose(fp_data_file);
 
    return SUCCESS;
+}
+
+
+/* 拷贝数据到临时内存 */
+int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte)
+{
+    /*--------------------------保存数据相关------------------------------------------*/
+     int mmap_fd;
+     FILE *fp_data_file, *fp_data_file1;
+     void *map_base, *virt_addr;
+     unsigned int num = 0;
+     off_t target = addr;
+     unsigned int i = 0;
+
+     /*--------------------------保存数据相关------------------------------------------*/
+  if((mmap_fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1)
+  {
+      qDebug("Failed to open memory!");
+      return ERROR;
+  }
+
+   map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mmap_fd, target & ~MAP_MASK);
+   if(map_base == (void *) -1) {
+      qDebug("Failed to map base address");
+      return ERROR;
+   }
+
+   char filepath[50] = {0};
+   sprintf(filepath, "DRAM_data_%u.txt", serial);
+
+   qDebug("save data to file from DRAM");
+   fp_data_file = fopen(filepath, "w");
+
+   target = addr;
+   num = 0;
+   for(i = 0; i < Size_byte / 2; i++)
+   {
+       virt_addr = map_base + (target & MAP_MASK);
+
+       num++;
+       if(num % AIN_num == 0)
+           fprintf(fp_data_file, "%u\n", *((uint16_t *) virt_addr));
+       else
+           fprintf(fp_data_file, "%u\t", *((uint16_t *) virt_addr));
+
+       target+=2;// 2 bytes per sample
+   }
+
+   fclose(fp_data_file);
+   fp_data_file = NULL;
+
+   target = addr;
+   qDebug("copy begin");
+   memcpy((void *)p_data, map_base + (target & MAP_MASK), Size_byte);//size unit unsigned short int
+   qDebug("copy end");
+
+
+  sprintf(filepath, "memory_data_%u.txt", serial);
+  fp_data_file1 = fopen(filepath, "w");
+  num = 0;
+  for(i = 0; i < Size_byte / 2; i++)
+  {
+      num++;
+      if(num % AIN_num == 0)
+          fprintf(fp_data_file1, "%u\n", *p_data);
+      else
+          fprintf(fp_data_file1, "%u\t", *p_data);
+
+      p_data++;
+  }
+  fclose(fp_data_file1);
+  qDebug("save data to file from memory done");
+
+   if(munmap(map_base, MAP_SIZE) == -1)
+   {
+      qDebug("Failed to unmap memory");
+      return ERROR;
+   }
+
+   close(mmap_fd);
+
+    return SUCCESS;
 }

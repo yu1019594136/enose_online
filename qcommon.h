@@ -12,7 +12,7 @@
 
 #define PRU_PLOT_TIME_SPAN                  100 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               400 //
-
+#define PRU_MEMORY_SIZE                     8000000 //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
 
 //数据采集模式
 enum SAMPLE_MODE{
@@ -100,6 +100,7 @@ typedef struct{
 //系统配置参数，保存于文件
 typedef struct{
     unsigned int time_span_pru_plot;//绘制PRU数据曲线时，数据点横跨的时间尺度，此参数用于计算降频频率
+    unsigned int pru_memory_size; //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
 
 } SYS_Para;
 
