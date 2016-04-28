@@ -76,7 +76,7 @@ private:
     QByteArray ba;
     //QString filename_serial;//
     //record sample times when task starts
-//    unsigned int serial;
+    unsigned int serial;
 
     volatile bool pru_sample_end;
 
@@ -108,7 +108,7 @@ void PRU_init_loadcode();
 unsigned int readFileValue(char filename[]);
 
 /* 保存数据到文件 */
-int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section);
+int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned short int *P_Data, unsigned int Sample_time_per_section);
 
 /* 拷贝数据到临时内存 */
 int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte);

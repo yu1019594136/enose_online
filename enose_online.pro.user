@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.1.1, 2016-04-26T09:52:25. -->
+<!-- Written by QtCreator 3.1.1, 2016-04-27T10:18:05. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -204,8 +204,8 @@
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_DYN-Debug/enose_online</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedHosts">
-       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
+       <value type="QString">192.168.1.102</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedRemotePaths">
        <value type="QString">/root/qi_enose_online</value>
@@ -216,8 +216,8 @@
        <value type="QString"></value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedTimes">
+       <value type="QDateTime">2016-04-27T10:05:56</value>
        <value type="QDateTime">2016-04-10T04:04:21</value>
-       <value type="QDateTime">2016-04-25T08:39:24</value>
       </valuelist>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.IgnoreMissingFiles">false</value>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.Incremental">true</value>

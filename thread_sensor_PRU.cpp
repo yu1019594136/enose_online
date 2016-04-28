@@ -51,8 +51,6 @@ extern SYS_Para sys_para;
 unsigned int pru_plot_time_span;
 unsigned int pru_memory_size;
 
-unsigned int serial;
-
 PRUThread::PRUThread(QObject *parent) :
     QThread(parent)
 {
@@ -96,18 +94,17 @@ void PRUThread::run()
     {
         while(pru_sample_flag)
         {
+            last_sample_time_per_section = sample_time_per_section;
+            last_spiData_1 = spiData[1];
+
             /* 1、确定spiData[1]的空间大小。即确定单次采样时间 */
             if(sample_clock_time_integer == 0 && sample_clock_time_remainder == 0)//采样已经完成，应该跳出循环
             {
                 pru_sample_flag = false;
                 pru_sample_end = true;
-                //break;
             }
             else if(sample_clock_time_integer != 0)//还有计时单元
             {
-                last_sample_time_per_section = sample_time_per_section;
-                last_spiData_1 = spiData[1];
-
                 spiData[1] = dataSize;
                 qDebug("this is %u clock period", sample_clock_time_integer);
                 sample_clock_time_integer--;
@@ -115,9 +112,6 @@ void PRUThread::run()
             }
             else if(sample_clock_time_remainder != 0)//只有最后一段计时余数
             {
-                last_sample_time_per_section = sample_time_per_section;
-                last_spiData_1 = spiData[1];
-
                 qDebug("there is %u seconds, less than a clock period", sample_clock_time_remainder);
                 spiData[1] = sample_clock_time_remainder * real_sample_freq * AIN_num * 2;
                 sample_time_per_section = sample_clock_time_remainder;
@@ -145,20 +139,19 @@ void PRUThread::run()
                 qDebug() << "pru_plot_data_buf.filename = " << pru_plot_data_buf.filename;
 
                 //准备数据保存文件名char
-//                ba = pru_plot_data_buf.filename.toLatin1();
-//                filename = ba.data();
+                ba = pru_plot_data_buf.filename.toLatin1();
+                filename = ba.data();
 
-//                last_sample_time_per_section;
-//                last_spiData_1
-
-//                /* 保存数据到文件, 并将绘图数据拷贝到内存块 */
-//                if(save_and_plot_data(filename, spiData[1] / 2, AIN_num, serial, sample_time_per_section) == SUCCESS)
-//                    qDebug("Data is saved in %s.\n", filename);
-//                else
-//                    qDebug("Data save error!\n");
+                /* 保存数据到文件, 并将绘图数据拷贝到内存块 */
+                qDebug("last_spiData_1 = %u", last_spiData_1);
+                qDebug("last_sample_time_per_section = %u", last_sample_time_per_section);
+                if(save_and_plot_data(filename, last_spiData_1 / 2, AIN_num, mem_buffer, last_sample_time_per_section) == SUCCESS)
+                    qDebug("Data is saved in %s.\n", filename);
+                else
+                    qDebug("Data save error!\n");
 
                 /* 发送信号驱动绘图选项卡开始绘图 */
-//                emit send_to_plot_pru_curve();
+                emit send_to_plot_pru_curve();
 
                 //sample task end ?
                 if(pru_sample_end)
@@ -438,49 +431,28 @@ unsigned int readFileValue(char filename[])
 }
 
 /* 保存数据到文件 */
-int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned int Serial, unsigned int Sample_time_per_section)
+int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsigned int AIN_NUM, unsigned short int *P_Data, unsigned int Sample_time_per_section)
 {
     /*--------------------------保存数据相关------------------------------------------*/
-     int mmap_fd;
      FILE *fp_data_file;
      unsigned int i = 0, j = 0, start_index = 0;
-     void *map_base, *virt_addr;
      unsigned int num = 0;
-     off_t target = addr;
-
-     /*--------------------------保存数据相关------------------------------------------*/
-  if((mmap_fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1)
-  {
-      qDebug("Failed to open memory!");
-      return ERROR;
-  }
-
-   map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mmap_fd, target & ~MAP_MASK);
-   if(map_base == (void *) -1) {
-      qDebug("Failed to map base address");
-      return ERROR;
-   }
 
    //保存数据到文件
    fp_data_file = fopen(filename, "w");
-
-   target = addr;
    num = 0;
    for(i = 0; i < numberOutputSamples; i++)
    {
-       virt_addr = map_base + (target & MAP_MASK);
        num++;
        if(num % AIN_NUM == 0)
-           fprintf(fp_data_file, "%u\n", *((uint16_t *) virt_addr));
+           fprintf(fp_data_file, "%u\n", P_Data[i]);
        else
-           fprintf(fp_data_file, "%u\t", *((uint16_t *) virt_addr));
-
-       target+=2;// 2 bytes per sample
+           fprintf(fp_data_file, "%u\t", P_Data[i]);
    }
+   fclose(fp_data_file);
 
    //选取数据到内存块
    unsigned int factor = 0;//分频因子
-   target = addr;
 
    //计算分频因子
    qDebug("Sample_time_per_section = %u", Sample_time_per_section);
@@ -495,7 +467,7 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
             {
                 for(j = 0; j < AIN_NUM; j++)//copy data
                 {
-                    pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = *((uint16_t *) (map_base + ((target + (i * AIN_NUM + j) * 2) & MAP_MASK)));
+                    pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = P_Data[i * AIN_NUM + j];
 
                 }
 
@@ -519,7 +491,7 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
            {
                for(j = 0; j < AIN_NUM; j++)//copy data
                {
-                   pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = *((uint16_t *) (map_base + ((target + (i * AIN_NUM + j) * 2) & MAP_MASK)));
+                   pru_plot_data_buf.pp_data[j][pru_plot_data_buf.index] = P_Data[i * AIN_NUM + j];
 
                }
 
@@ -534,35 +506,7 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
 
    }
 
-//   //将内存块内容保存到文件做检查
-//   char filepath[50] = {0};
-//   sprintf(filepath, "record%u.txt", Serial);
-//   FILE *fp_memory_data;
-
-//   qDebug("which data is oldest data in data.txt");
-//   qDebug("pru_plot_data_buf.index = %lu", pru_plot_data_buf.index);
-
-//    fp_memory_data = fopen(filepath, "w");
-
-//    for(i = 0; i < pru_plot_data_buf.buf_size; i++)
-//    {
-//        for(j = 0; j < AIN_NUM; j++)
-//        {
-//            fprintf(fp_memory_data, "%u\t", pru_plot_data_buf.pp_data[j][i]);
-//        }
-//        fprintf(fp_memory_data, "\n");
-//    }
-//    fclose(fp_memory_data);
-
-   //清理工作
-   if(munmap(map_base, MAP_SIZE) == -1)
-   {
-      qDebug("Failed to unmap memory");
-      return ERROR;
-   }
-   close(mmap_fd);
-
-   fclose(fp_data_file);
+   qDebug("plot data memory is ready");
 
    return SUCCESS;
 }
@@ -573,18 +517,15 @@ int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte)
 {
     /*--------------------------保存数据相关------------------------------------------*/
      int mmap_fd;
-     FILE *fp_data_file, *fp_data_file1;
-     void *map_base, *virt_addr;
-     unsigned int num = 0;
+     void *map_base;
      off_t target = addr;
-     unsigned int i = 0;
 
      /*--------------------------保存数据相关------------------------------------------*/
-  if((mmap_fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1)
-  {
-      qDebug("Failed to open memory!");
-      return ERROR;
-  }
+     if((mmap_fd = open("/dev/mem", O_RDWR | O_SYNC)) == -1)
+     {
+         qDebug("Failed to open memory!");
+         return ERROR;
+     }
 
    map_base = mmap(0, MAP_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mmap_fd, target & ~MAP_MASK);
    if(map_base == (void *) -1) {
@@ -592,51 +533,8 @@ int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte)
       return ERROR;
    }
 
-   char filepath[50] = {0};
-   sprintf(filepath, "DRAM_data_%u.txt", serial);
-
-   qDebug("save data to file from DRAM");
-   fp_data_file = fopen(filepath, "w");
-
-   target = addr;
-   num = 0;
-   for(i = 0; i < Size_byte / 2; i++)
-   {
-       virt_addr = map_base + (target & MAP_MASK);
-
-       num++;
-       if(num % AIN_num == 0)
-           fprintf(fp_data_file, "%u\n", *((uint16_t *) virt_addr));
-       else
-           fprintf(fp_data_file, "%u\t", *((uint16_t *) virt_addr));
-
-       target+=2;// 2 bytes per sample
-   }
-
-   fclose(fp_data_file);
-   fp_data_file = NULL;
-
-   target = addr;
-   qDebug("copy begin");
+   //target = addr;
    memcpy((void *)p_data, map_base + (target & MAP_MASK), Size_byte);//size unit unsigned short int
-   qDebug("copy end");
-
-
-  sprintf(filepath, "memory_data_%u.txt", serial);
-  fp_data_file1 = fopen(filepath, "w");
-  num = 0;
-  for(i = 0; i < Size_byte / 2; i++)
-  {
-      num++;
-      if(num % AIN_num == 0)
-          fprintf(fp_data_file1, "%u\n", *p_data);
-      else
-          fprintf(fp_data_file1, "%u\t", *p_data);
-
-      p_data++;
-  }
-  fclose(fp_data_file1);
-  qDebug("save data to file from memory done");
 
    if(munmap(map_base, MAP_SIZE) == -1)
    {
