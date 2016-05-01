@@ -53,6 +53,8 @@ Qt::color1      1           1 pixel value (for bitmaps)
     PRU_Plot_Data_Buf.index = 0;
     PRU_Plot_Data_Buf.buf_size = 0;
     PRU_Plot_Data_Buf.valid_data_size = 0;
+    PRU_Plot_Data_Buf.pp_data_float = NULL;
+    PRU_Plot_Data_Buf.pp_data_int = NULL;
 }
 
 //接收来pru线程的数据绘图命令

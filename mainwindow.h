@@ -5,9 +5,12 @@
 #include <QTimer>
 #include "thread_dust_uart.h"
 #include "thread_logic_contrl.h"
+#include "thread_sensor_PRU.h"
+#include "thread_sht21_air.h"
 #include "uart_plot_widget.h"
 #include "pru_plot_widget.h"
-#include "thread_sensor_PRU.h"
+#include "sht21_plot_widget.h"
+#include "air_quality_plot_widget.h"
 
 namespace Ui {
 class MainWindow;
@@ -64,9 +67,12 @@ private:
     UartThread *uartthread;//用于读取串口数据
     LogicThread *logicthread;//用于逻辑控制
     PRUThread *pruthread;//控制PRU采集数据
+    Sht21_Air_Thread *sht21_air_thread;//用于采集温湿度数据和空气质量数据
 
     Uart_Plot_Widget *uart_plot_widget;//串口数据绘图选项卡
     PRU_Plot_Widget *pru_plot_widget;//pru数据绘图选项卡
+    Air_Plot_Widget *air_plot_widget;//用于存储空气质量传感器绘图
+    Sht21_Plot_Widget *sht21_plot_widget;//用于温湿度绘图
 
 };
 

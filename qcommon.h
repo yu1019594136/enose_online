@@ -9,9 +9,10 @@
 #define PRUADC_BIN                          "/root/qi_enose_online/PRU_Code/PRUADC.bin"
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
 
-
 #define PRU_PLOT_TIME_SPAN                  240 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               400 //
+#define AIR_DATA_PLOT_HEIGHT                100 //空气质量原始数据为占空比，周期100ms，高电平时间越长空气质量越差
+#define SHT21_DATA_PLOT_HEIGHT              50 //温湿度数据中，温度显示范围0-100°，湿度显示范围0%-100%
 #define PRU_MEMORY_SIZE                     8000000 //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
 
 //数据采集模式
@@ -35,11 +36,10 @@ enum DATA_SAVE{
 
 //采集任务类型
 enum TASK_TYPE{
-    UNDEFINED       = 0,
-    UART_COMPLETED  = 1,
-    PRU_COMPLETED   = 2,
-    SPI_COMPLETED   = 4,
-    SHT21_COMPLETED = 8
+    UNDEFINED               = 0,
+    UART_COMPLETED          = 1,
+    PRU_COMPLETED           = 2,
+    SHT21_AIR_COMPLETED     = 4
 };
 
 //逻辑线程通知串口线程开始采集数据
@@ -52,6 +52,8 @@ typedef struct{
 typedef struct{
     unsigned short int *p_data;    //一维,内存块首地址
     unsigned short int **pp_data;    //二维内存块首地址
+    float **pp_data_float;          //for float
+    unsigned int **pp_data_int;     //for unsigned int
     unsigned long int buf_size;        //行内存块大小
     unsigned long int index;            //当前最新的数据项索引，循环更新时需要用到的索引,index指向最旧的数据，index-1表示最新的一个数据,index在0-data_size之间循环
     unsigned long int valid_data_size;  //数据块中每行有效数据的个数,有效数据个数从0开始逐渐增长，最后保持在data_size大小，
@@ -70,6 +72,15 @@ typedef struct{
     int sample_mode;
 } PRU_SAMPLE_START;
 
+//sht21_air线程采样参数
+typedef struct{
+    unsigned long sht21_display_size; //显示数据点个数
+    unsigned long air_display_size; //显示数据点个数
+    unsigned long sht21_period;//单位ms，以100ms最小单位递增
+    unsigned long air_period;//单位s，以1s最小单位递增
+    QString sht21_filename;   //保存数据文件名称
+    QString air_filename;   //保存数据文件名称
+} SHT21_AIR_SAMPLE_START;
 
 typedef struct{
     //采样时间

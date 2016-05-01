@@ -27,6 +27,8 @@ UartThread::UartThread(QObject *parent) :
     uart_plot_data_buf.index = 0;
     uart_plot_data_buf.valid_data_size = 0;
     uart_plot_data_buf.pp_data = NULL;
+    uart_plot_data_buf.pp_data_float = NULL;
+    uart_plot_data_buf.pp_data_int = NULL;
 
     //缓冲区初始化
     memset(uart_data_buffer, 0, sizeof(char) * 5);
@@ -35,7 +37,7 @@ UartThread::UartThread(QObject *parent) :
 
 void UartThread::run()
 {
-    qDebug("uart thread starts\n");
+    qDebug("uart thread starts");
 
     while(!stopped)
     {

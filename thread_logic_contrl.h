@@ -29,6 +29,7 @@ private:
 
     UART_SAMPLE_START uart_sample_start;
     PRU_SAMPLE_START pru_sample_start;
+    SHT21_AIR_SAMPLE_START sht21_air_sample_start;
 
 signals:
     //逻辑线程发送此信号给串口线程通知串口线程开始数据采集
@@ -45,6 +46,12 @@ signals:
 
     //逻辑线程发送信号给GUI线程，所有任务已经结束，并通知其使能start按钮
     void send_to_GUI_enbale_start();
+
+    //通知sht21_air线程停止采集温湿度数据和空气质量数据
+    void send_to_sht21_air_thread_sample_stop();
+
+    //通知sht21_air线程开始采集温湿度数据和空气质量数据
+    void send_to_sht21_air_thread_sample_start(SHT21_AIR_SAMPLE_START Sht21_air_sample_start);
 
 public slots:
     //接受各个线程的采集任务结果报告

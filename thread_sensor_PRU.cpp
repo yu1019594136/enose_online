@@ -72,6 +72,8 @@ PRUThread::PRUThread(QObject *parent) :
     pru_plot_data_buf.buf_size = 0;
     pru_plot_data_buf.index = 0;
     pru_plot_data_buf.valid_data_size = 0;
+    pru_plot_data_buf.pp_data_float = NULL;
+    pru_plot_data_buf.pp_data_int = NULL;
 
     AIN_num = 0;
     AIN_num_temp = 0;
@@ -90,7 +92,7 @@ void PRUThread::run()
 {
     int event_num = 0;
 
-    qDebug("PRU thread starts\n");
+    qDebug("PRU thread starts");
 
     //PRU初始化，下载PRU代码到Instruction data ram中
     PRU_init_loadcode();
@@ -262,6 +264,17 @@ void PRUThread::run()
 
 void PRUThread::stop()
 {
+    //有时候stop信号还没发过来，或者计时时间还未到，用户突然按下quit要退出程序，此时应该在退出程序前把未保存的数据（虽然不完整）任然保存到文件
+    qDebug("pru is ready to stop sample task when quit button was pressed");
+
+    //停止当前片段的pru采集
+    PRUADC_stop = 1;
+    prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 1, &PRUADC_stop, sizeof(unsigned int));
+
+    //结束采样循环
+    sample_clock_time_integer = 0;
+    sample_clock_time_remainder = 0;
+
     stopped = true;
 }
 

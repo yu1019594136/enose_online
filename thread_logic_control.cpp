@@ -22,7 +22,7 @@ LogicThread::LogicThread(QObject *parent) :
 
 void LogicThread::run()
 {
-    qDebug("logic thread starts\n");
+    qDebug("logic thread starts");
 
     /* 从系统参数文件中读取配置参数，保存到sys_para */
     // do something....
@@ -55,9 +55,11 @@ void LogicThread::logictimer_timeout()
         logictimer->stop();
     }
 
-    emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
+    //emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
 
-    emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
+    //emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
+
+    emit send_to_sht21_air_thread_sample_stop();//通知sht21_air线程停止采集温湿度数据和空气质量数据
 }
 
 //其他线程的结束工作汇报。
@@ -73,12 +75,19 @@ void LogicThread::receive_task_report(int Task_finished_report)
         task_result = task_result | Task_finished_report;
         qDebug() << "PRU task is completed. Task_finished_report = " << Task_finished_report;
     }
+    else if(Task_finished_report == SHT21_AIR_COMPLETED)
+    {
+        task_result = task_result | Task_finished_report;
+        qDebug() << "SHT21_AIR task is completed. Task_finished_report = " << Task_finished_report;
+    }
     else
     {
         qDebug() << "a wrong report is received by logic";
     }
 
-    if((task_result & UART_COMPLETED) && (task_result & PRU_COMPLETED))//两个任务都完成了
+    task_result = task_result | UART_COMPLETED;
+    task_result = task_result | PRU_COMPLETED;
+    if((task_result & UART_COMPLETED) && (task_result & PRU_COMPLETED) && (task_result & SHT21_AIR_COMPLETED))//任务都完成了
     {
         emit send_to_GUI_enbale_start();
     }
@@ -114,9 +123,20 @@ void LogicThread::recei_parse_GUI_data()
     pru_sample_start.AIN[10] = gui_para.AIN[10];
     pru_sample_start.sample_mode = gui_para.sample_mode;
 
-    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+    //通知sht21_air线程开始采集温湿度数据和空气质量数据
+    sht21_air_sample_start.air_display_size = gui_para.plot_data_num_air;
+    sht21_air_sample_start.air_period = gui_para.sample_period_air_ms;
+    sht21_air_sample_start.air_filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_air_qulity.txt");
 
-    emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
+    sht21_air_sample_start.sht21_display_size = gui_para.plot_data_num_sht21;
+    sht21_air_sample_start.sht21_period = gui_para.sample_period_sht21_s;
+    sht21_air_sample_start.sht21_filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_sht21.txt");;
+
+    //emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+
+    //emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
+
+    emit send_to_sht21_air_thread_sample_start(sht21_air_sample_start);//通知sht21_air线程开始采集温湿度数据和空气质量数据
 
     if(gui_para.sample_mode == TIMING)//定时模式下开启计时
         logictimer->start(1000 * (gui_para.sample_time_hours * 3600 + gui_para.sample_time_minutes * 60 + gui_para.sample_time_seconds));//逻辑线程启动定时器开始计时

@@ -9,6 +9,7 @@
 //注册元类型
 Q_DECLARE_METATYPE(UART_SAMPLE_START)
 Q_DECLARE_METATYPE(PRU_SAMPLE_START)
+Q_DECLARE_METATYPE(SHT21_AIR_SAMPLE_START)
 
 //读取界面参数并发通知逻辑线程开始数据采集
 GUI_Para gui_para;
@@ -27,11 +28,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* 实例化一个tab页用于绘图 */
     uart_plot_widget = new Uart_Plot_Widget(this);
-    ui->tabWidget->addTab(uart_plot_widget, "uart curve");
+    ui->tabWidget->addTab(uart_plot_widget, "uart");
 
     /* 实例化一个tab页用于绘图 */
     pru_plot_widget = new PRU_Plot_Widget(this);
-    ui->tabWidget->addTab(pru_plot_widget, "pru curve");
+    ui->tabWidget->addTab(pru_plot_widget, "pru");
+
+    /* 实例化一个tab页用于绘图 */
+    air_plot_widget = new Air_Plot_Widget(this);
+    ui->tabWidget->addTab(air_plot_widget, "air");
+
+    /* 实例化一个tab页用于绘图 */
+    sht21_plot_widget = new Sht21_Plot_Widget(this);
+    ui->tabWidget->addTab(sht21_plot_widget, "sht21");
 
     /* 开机显示时间 */
     QDateTime datetime = QDateTime::currentDateTime();
@@ -69,12 +78,14 @@ MainWindow::MainWindow(QWidget *parent) :
     /* 注册元类型 */
     qRegisterMetaType <UART_SAMPLE_START>("UART_SAMPLE_START");
     qRegisterMetaType <PRU_SAMPLE_START>("PRU_SAMPLE_START");
+    qRegisterMetaType <SHT21_AIR_SAMPLE_START>("SHT21_AIR_SAMPLE_START");
 
 
     /* 实例化三个线程并启动,将三个子线程相关的信号关联到GUI主线程的槽函数 */
     uartthread = new UartThread ();
     logicthread = new LogicThread ();
     pruthread = new PRUThread ();
+    sht21_air_thread = new Sht21_Air_Thread ();//用于采集温湿度数据和空气质量数据
 
     /* GUI线程发送信号通知逻辑线程开始解析数据并启动其他线程的采集任务 */
     connect(this, SIGNAL(send_to_logic_GUI_data()), logicthread, SLOT(recei_parse_GUI_data()), Qt::QueuedConnection);
@@ -95,6 +106,10 @@ MainWindow::MainWindow(QWidget *parent) :
     /* pru线程通知绘图选项卡进行绘图 */
     connect(pruthread, SIGNAL(send_to_plot_pru_curve()), pru_plot_widget, SLOT(recei_fro_pruthread()), Qt::QueuedConnection);
 
+    /* sht21_air线程通知sht21绘图选项卡进行绘图 */
+    connect(sht21_air_thread, SIGNAL(send_to_plot_sht21_curve()), sht21_plot_widget, SLOT(recei_fro_sht21_air_thread_sht21_plot()), Qt::QueuedConnection);
+    connect(sht21_air_thread, SIGNAL(send_to_plot_air_curve()), air_plot_widget, SLOT(recei_fro_sht21_air_thread_air_plot()), Qt::QueuedConnection);
+
     /* 逻辑线程通知pru线程开始采集数据 */
     connect(logicthread, SIGNAL(send_to_pruthread_pru_sample_start(PRU_SAMPLE_START)), pruthread, SLOT(recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START)), Qt::QueuedConnection);
 
@@ -107,9 +122,19 @@ MainWindow::MainWindow(QWidget *parent) :
     /* 逻辑线程发送信号给GUI线程，所有任务已经结束，并通知其使能start按钮 */
     connect(logicthread, SIGNAL(send_to_GUI_enbale_start()), this, SLOT(recei_fro_logicthread_enable_start()), Qt::QueuedConnection);
 
+    /* 逻辑线程通知sht21_air线程开始采集数据 */
+    connect(logicthread, SIGNAL(send_to_sht21_air_thread_sample_start(SHT21_AIR_SAMPLE_START)), sht21_air_thread, SLOT(recei_fro_logicthread_sht21_air_sample_start(SHT21_AIR_SAMPLE_START)), Qt::QueuedConnection);
+
+    /* 逻辑线程通知sht21_air线程停止采集数据 */
+    connect(logicthread, SIGNAL(send_to_sht21_air_thread_sample_stop()), sht21_air_thread, SLOT(recei_fro_logicthread_sht21_air_sample_stop()), Qt::QueuedConnection);
+
+    /* sht21_air线程通知逻辑线程采样结束 */
+    connect(sht21_air_thread, SIGNAL(send_to_logic_sht21_air_sample_complete(int)), logicthread, SLOT(receive_task_report(int)), Qt::QueuedConnection);
+
     uartthread->start();
     logicthread->start();
     pruthread->start();
+    sht21_air_thread->start();
 
 }
 
@@ -118,6 +143,7 @@ MainWindow::~MainWindow()
     delete ui;
     delete uartthread;
     delete logicthread;
+    delete sht21_air_thread;
 }
 
 void MainWindow::on_quit_clicked()
@@ -134,6 +160,10 @@ void MainWindow::on_quit_clicked()
     if(pruthread->isRunning())
         pruthread->stop();
     while(!pruthread->isFinished());
+
+    if(sht21_air_thread->isRunning())
+        sht21_air_thread->stop();
+    while(!sht21_air_thread->isFinished());
 
 
     /* 退出事件循环，结束程序 */
