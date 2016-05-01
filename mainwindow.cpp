@@ -62,6 +62,10 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->checkBox_10, SIGNAL(stateChanged(int)), SLOT(checkbox_10_changed(int)));
     connect(ui->checkBox_11, SIGNAL(stateChanged(int)), SLOT(checkbox_11_changed(int)));
 
+    //使能START按钮，禁能STOP按钮
+    ui->pushButton->setEnabled(true);
+    ui->pushButton_2->setEnabled(false);
+
     /* 注册元类型 */
     qRegisterMetaType <UART_SAMPLE_START>("UART_SAMPLE_START");
     qRegisterMetaType <PRU_SAMPLE_START>("PRU_SAMPLE_START");
@@ -93,6 +97,15 @@ MainWindow::MainWindow(QWidget *parent) :
 
     /* 逻辑线程通知pru线程开始采集数据 */
     connect(logicthread, SIGNAL(send_to_pruthread_pru_sample_start(PRU_SAMPLE_START)), pruthread, SLOT(recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START)), Qt::QueuedConnection);
+
+    /* GUI线程通知逻辑线程stop按钮被按下 */
+    connect(this, SIGNAL(send_to_logic_stop_pressed()), logicthread, SLOT(logictimer_timeout()), Qt::QueuedConnection);
+
+    /* pru线程收到逻辑线程的信号后，执行结束pru采样任务的槽函数 */
+    connect(logicthread, SIGNAL(send_to_pruthread_sample_stop()), pruthread, SLOT(recei_fro_logicthread_pru_sample_stop()), Qt::QueuedConnection);
+
+    /* 逻辑线程发送信号给GUI线程，所有任务已经结束，并通知其使能start按钮 */
+    connect(logicthread, SIGNAL(send_to_GUI_enbale_start()), this, SLOT(recei_fro_logicthread_enable_start()), Qt::QueuedConnection);
 
     uartthread->start();
     logicthread->start();
@@ -176,12 +189,6 @@ void MainWindow::on_pushButton_clicked()
     gui_para.user_string = ui->lineEdit->text();
     qDebug() << "user_string = " << gui_para.user_string;
 
-    //checkbox不需要再次读取，槽函数中已经进行设置
-//    for(int i = 0; i < 11; i++)
-//    {
-//        qDebug() << "AIN[" << i << "] = " << gui_para.AIN[i];
-//    }
-
     if(ui->radioButton_5->isChecked())
     {
         gui_para.data_save_mode = LOCAL_HOST;
@@ -199,6 +206,9 @@ void MainWindow::on_pushButton_clicked()
     }
 
     emit send_to_logic_GUI_data();
+
+    ui->pushButton->setEnabled(false);//禁能start按钮
+    ui->pushButton_2->setEnabled(true);//使能stop按钮
 }
 
 //如果选择了定时模式，则要把hours minutes, seconds输入框使能
@@ -350,4 +360,21 @@ void MainWindow::checkbox_11_changed(int state)
     {
         gui_para.AIN[10] = true;
     }
+}
+
+void MainWindow::on_pushButton_2_clicked()
+{
+    //通知逻辑线程stop按钮被按下
+    emit send_to_logic_stop_pressed();
+
+    //同时禁能stop按钮
+    ui->pushButton_2->setEnabled(false);
+}
+
+void MainWindow::recei_fro_logicthread_enable_start()
+{
+    //使能start按钮
+    ui->pushButton->setEnabled(true);
+    ui->pushButton_2->setEnabled(false);
+    qDebug("enable start button, and disable stop button");
 }

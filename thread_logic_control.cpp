@@ -45,6 +45,7 @@ void LogicThread::stop()
 }
 
 //逻辑定时器溢出后，会给其他工作线程发送信号（pru线程除外)，并等待其他线程的结束工作汇报。
+//定时器溢出或者stop被按下都将产生相同的动作：结束各个采样任务，因此定时器溢出的槽函数和stop按钮按下后触发的逻辑线程槽函数可以为同一个
 void LogicThread::logictimer_timeout()
 {
 
@@ -54,7 +55,9 @@ void LogicThread::logictimer_timeout()
         logictimer->stop();
     }
 
-    emit send_to_uartthread_sample_stop();
+    emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
+
+    emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
 }
 
 //其他线程的结束工作汇报。
@@ -70,13 +73,14 @@ void LogicThread::receive_task_report(int Task_finished_report)
         task_result = task_result | Task_finished_report;
         qDebug() << "PRU task is completed. Task_finished_report = " << Task_finished_report;
     }
-//    else if()
-//    {
-//        qDebug();
-//    }
     else
     {
         qDebug() << "a wrong report is received by logic";
+    }
+
+    if((task_result & UART_COMPLETED) && (task_result & PRU_COMPLETED))//两个任务都完成了
+    {
+        emit send_to_GUI_enbale_start();
     }
 
 }
@@ -113,5 +117,14 @@ void LogicThread::recei_parse_GUI_data()
 
     emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
 
-    logictimer->start(1000 * (gui_para.sample_time_hours * 3600 + gui_para.sample_time_minutes * 60 + gui_para.sample_time_seconds));//逻辑线程启动定时器开始计时
+    if(gui_para.sample_mode == TIMING)//定时模式下开启计时
+        logictimer->start(1000 * (gui_para.sample_time_hours * 3600 + gui_para.sample_time_minutes * 60 + gui_para.sample_time_seconds));//逻辑线程启动定时器开始计时
+    else//监测模式下
+    {
+        if(logictimer->isActive())
+            logictimer->stop();
+    }
+
+    //任务结果状态回归
+    task_result = UNDEFINED;
 }

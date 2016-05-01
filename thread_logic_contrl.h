@@ -40,6 +40,12 @@ signals:
     //逻辑线程通知pru线程开始采集数据
     void send_to_pruthread_pru_sample_start(PRU_SAMPLE_START Pru_sample_start);
 
+    //逻辑线程发送此信号给pru线程通知pru线程停止数据采集
+    void send_to_pruthread_sample_stop();
+
+    //逻辑线程发送信号给GUI线程，所有任务已经结束，并通知其使能start按钮
+    void send_to_GUI_enbale_start();
+
 public slots:
     //接受各个线程的采集任务结果报告
     void receive_task_report(int Task_finished_report);

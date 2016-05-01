@@ -44,11 +44,18 @@ private slots:
     void checkbox_10_changed(int state);
     void checkbox_11_changed(int state);
 
+    void on_pushButton_2_clicked();
+
 public slots:
+    //逻辑线程发送信号给GUI线程，所有任务已经结束
+    void recei_fro_logicthread_enable_start();
 
 signals:
     //发送信号通知控制线程，界面参数已经读取
     void send_to_logic_GUI_data();
+
+    //stop button is pressed
+    void send_to_logic_stop_pressed();
 
 
 private:

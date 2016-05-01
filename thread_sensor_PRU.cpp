@@ -366,6 +366,12 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     pru_sample_end = false;
 }
 
+void PRUThread::recei_fro_logicthread_pru_sample_stop()
+{
+    qDebug("pru is ready to stop sample task");
+
+}
+
 /* PRU初始化，下载PRU代码到Instruction data ram中 */
 void PRU_init_loadcode()
 {
