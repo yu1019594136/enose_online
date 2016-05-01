@@ -32,12 +32,19 @@ unsigned int dataSize;// units byte
 /* 采样配置相关数据 */
 unsigned int spiData[14];
 unsigned int timerData[2];
+unsigned int PRU_shared_mem_cfg[4] = {0};//用于配置PRU SHARED MEM
 unsigned int AIN_num;
 unsigned int AIN_num_temp;
 unsigned int sample_clock_period_per_seconds;//时间切割单元
 unsigned int sample_clock_time_integer;//整数部分
 unsigned int sample_clock_time_remainder;//余数部分
 float real_sample_freq;//由于延时的整数关系，有时候输入的频率会被修正
+
+void *sharedMem = NULL;
+unsigned int *sharedMem_int;
+unsigned int PRUADC_stop = 1;
+unsigned int PRU_shared_mem_result[4] = {0};//用于保存PRU SHARED MEM的读取结果
+
 
 //pru数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 PLOT_DATA_BUF pru_plot_data_buf;
@@ -77,8 +84,6 @@ PRUThread::PRUThread(QObject *parent) :
     last_spiData_1 = 0;
 
     pru_plot_time_span = PRU_PLOT_TIME_SPAN;// = sys_para.time_span_pru_plot
-    //pru_memory_size = PRU_MEMORY_SIZE;// = sys_para.pru_memory_size
-
 }
 
 void PRUThread::run()
@@ -94,9 +99,6 @@ void PRUThread::run()
     {
         while(pru_sample_flag)
         {
-            last_sample_time_per_section = sample_time_per_section;
-            last_spiData_1 = spiData[1];
-
             /* 1、确定spiData[1]的空间大小。即确定单次采样时间 */
             if(sample_clock_time_integer == 0 && sample_clock_time_remainder == 0)//采样已经完成，应该跳出循环
             {
@@ -124,6 +126,7 @@ void PRUThread::run()
                 /* 写入配置数据到DATA RAM */
                 prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, spiData, sizeof(spiData));  // spi config
                 prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, timerData, sizeof(timerData)); // sample config
+                prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 0, PRU_shared_mem_cfg, sizeof(PRU_shared_mem_cfg));//PRU_shared_mem的前四个DWORD全写0,
 
                 /* 使能PRU运行采样程序 */
                 if(prussdrv_pru_enable(ADC_PRU_NUM) == 0)
@@ -143,9 +146,7 @@ void PRUThread::run()
                 filename = ba.data();
 
                 /* 保存数据到文件, 并将绘图数据拷贝到内存块 */
-                qDebug("last_spiData_1 = %u", last_spiData_1);
-                qDebug("last_sample_time_per_section = %u", last_sample_time_per_section);
-                if(save_and_plot_data(filename, last_spiData_1 / 2, AIN_num, mem_buffer, last_sample_time_per_section) == SUCCESS)
+                if(save_and_plot_data(filename, last_spiData_1 >> 1, AIN_num, mem_buffer, last_sample_time_per_section) == SUCCESS)
                     qDebug("Data is saved in %s.\n", filename);
                 else
                     qDebug("Data save error!\n");
@@ -186,9 +187,26 @@ void PRUThread::run()
                 if(prussdrv_pru_disable(CLK_PRU_NUM) == 0)
                     qDebug("The CLKPRU disable succeed!\n ");
 
+                //读取存储空间的数据个数
+                PRU_shared_mem_result[0] = *sharedMem_int;
+                PRU_shared_mem_result[1] = *(sharedMem_int + 1);
+                PRU_shared_mem_result[2] = *(sharedMem_int + 2);
+                PRU_shared_mem_result[3] = *(sharedMem_int + 3);
+
+                qDebug("sharedMem1 = %u\nsharedMem2 = %u\nsharedMem3 = 0x%x\nsharedMem4 = %u.\n", PRU_shared_mem_result[0], PRU_shared_mem_result[1], PRU_shared_mem_result[2], PRU_shared_mem_result[3]);
+                qDebug("%u data was sampled", spiData[1] - PRU_shared_mem_result[3]);
+
+                //sample_time_per_section和spiData[1]主要用于这次的采样配置
+                //last_sample_time_per_section和last_spiData_1主要用于上一次的数据拷贝处理
+                last_sample_time_per_section = sample_time_per_section;
+                last_spiData_1 = spiData[1] - PRU_shared_mem_result[3];//根据PRU SHARED MEM空间返回的剩余空间计算消耗的空间，即计算采样字节数（bytes）
+                last_spiData_1 = last_spiData_1 - last_spiData_1 % (AIN_num * 2);
+                qDebug("last_spiData_1 = %u (the data less than one line were discarded.)", last_spiData_1);
+                qDebug("last_sample_time_per_section = %u", last_sample_time_per_section);
+
                 //fast memroy copy, prepare parameters for file saving
-                if(copy_data_to_buf(mem_buffer, spiData[1]) == SUCCESS)//spiData[1] unit bytes
-                    qDebug("%u (bytes) data is copied", spiData[1]);
+                if(copy_data_to_buf(mem_buffer, last_spiData_1) == SUCCESS)//spiData[1] unit bytes,不足一行的部分丢弃
+                    qDebug("%u (bytes) data is copied.", last_spiData_1);
 
                 serial++;
             }
@@ -213,6 +231,8 @@ void PRUThread::run()
         qDebug() << "pru free memory before pruthread stop";
     }
 
+    //Releases PRUSS clocks and disables prussdrv module.
+    prussdrv_exit();
 
     qDebug("PRU thread stopped");
 }
@@ -339,6 +359,7 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
     last_sample_time_per_section = 0;
     last_spiData_1 = 0;
     spiData[1] = 0;
+    PRU_shared_mem_result[3] = 0;
 
     //开始采样
     pru_sample_flag = true;
@@ -396,6 +417,12 @@ void PRU_init_loadcode()
     // PRUSS0_PRU1_DATARAM if you wish to write to PRU1
     prussdrv_pru_write_memory(PRUSS0_PRU0_DATARAM, 0, spiData, sizeof(spiData));  // spi code
     prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, timerData, sizeof(timerData)); // sample clock
+    prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 0, PRU_shared_mem_cfg, sizeof(PRU_shared_mem_cfg));//PRU_shared_mem的前四个DWORD全写0,
+
+    //映射PRU SHARED MEM空间，获取空间首地址
+    prussdrv_map_prumem(PRUSS0_SHARED_DATARAM, &sharedMem);
+    sharedMem_int = (unsigned int*) sharedMem;
+    qDebug("INIT:sharedMem1 = %u, sharedMem2 = %u, sharedMem3 = 0x%x, sharedMem4 = %u.\n", *sharedMem_int, *(sharedMem_int + 1), *(sharedMem_int + 2), *(sharedMem_int + 3));
 
     // Load and execute the PRU program on the PRU
     prussdrv_exec_program (ADC_PRU_NUM, PRUADC_BIN);

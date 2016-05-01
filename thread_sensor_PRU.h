@@ -16,6 +16,7 @@
 
 #define MAP_SIZE 0x0FFFFFFF
 #define MAP_MASK (MAP_SIZE - 1)
+#define PRUSS0_SHARED_DATARAM    4
 
 #define MAX_BUFFER_SIZE 4000000 //unsigned short int
 
