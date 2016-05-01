@@ -67,6 +67,7 @@ typedef struct{
     unsigned int sample_time_hours;//每个通道的时间长度
     unsigned int sample_time_minutes;//每个通道的时间长度
     unsigned int sample_time_seconds;//每个通道的时间长度
+    int sample_mode;
 } PRU_SAMPLE_START;
 
 

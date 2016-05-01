@@ -112,6 +112,7 @@ void LogicThread::recei_parse_GUI_data()
     pru_sample_start.AIN[8] = gui_para.AIN[8];
     pru_sample_start.AIN[9] = gui_para.AIN[9];
     pru_sample_start.AIN[10] = gui_para.AIN[10];
+    pru_sample_start.sample_mode = gui_para.sample_mode;
 
     emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
 

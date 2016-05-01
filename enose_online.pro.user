@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.1.1, 2016-04-30T20:45:01. -->
+<!-- Written by QtCreator 3.1.1, 2016-05-01T03:34:35. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -446,8 +446,8 @@
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Debug/enose_online</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedHosts">
-       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
+       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
        <value type="QString">192.168.1.102</value>
       </valuelist>
@@ -464,8 +464,8 @@
        <value type="QString"></value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedTimes">
-       <value type="QDateTime">2016-04-30T18:28:55</value>
        <value type="QDateTime">2016-04-28T07:29:15</value>
+       <value type="QDateTime">2016-05-01T03:13:26</value>
        <value type="QDateTime">2016-04-10T05:44:49</value>
        <value type="QDateTime">2016-04-10T04:12:22</value>
       </valuelist>

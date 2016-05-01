@@ -99,7 +99,7 @@ void PRUThread::run()
     {
         while(pru_sample_flag)
         {
-            /* 1、确定spiData[1]的空间大小。即确定单次采样时间 */
+            /* 1、计算本次将要采样的数据量, 确定spiData[1]的空间大小。即确定单次采样时间 */
             if(sample_clock_time_integer == 0 && sample_clock_time_remainder == 0)//采样已经完成，应该跳出循环
             {
                 pru_sample_flag = false;
@@ -109,7 +109,14 @@ void PRUThread::run()
             {
                 spiData[1] = dataSize;
                 qDebug("this is %u clock period", sample_clock_time_integer);
-                sample_clock_time_integer--;
+                if(pru_sample_start.sample_mode == TIMING)
+                {
+                    sample_clock_time_integer--;
+                }
+                else if(pru_sample_start.sample_mode == MONITOR)//监测模式下保证sample_clock_time_integer不为0或者不递减即可,直到逻辑线程发来终结信号
+                {
+                    sample_clock_time_integer = 10000;//
+                }
                 sample_time_per_section = sample_clock_period_per_seconds;
             }
             else if(sample_clock_time_remainder != 0)//只有最后一段计时余数
@@ -128,6 +135,8 @@ void PRUThread::run()
                 prussdrv_pru_write_memory(PRUSS0_PRU1_DATARAM, 0, timerData, sizeof(timerData)); // sample config
                 prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 0, PRU_shared_mem_cfg, sizeof(PRU_shared_mem_cfg));//PRU_shared_mem的前四个DWORD全写0,
 
+                /* 若线程运行到此处时接到来自逻辑线程的停止采样信号，那么执行完槽函数后有可能产生只有一个数据的文件，为了避免此种现象，增加对last_spiData_1进行判断 */
+
                 /* 使能PRU运行采样程序 */
                 if(prussdrv_pru_enable(ADC_PRU_NUM) == 0)
                      qDebug("The ADCPRU enable succeed!\n");
@@ -145,14 +154,21 @@ void PRUThread::run()
                 ba = pru_plot_data_buf.filename.toLatin1();
                 filename = ba.data();
 
-                /* 保存数据到文件, 并将绘图数据拷贝到内存块 */
-                if(save_and_plot_data(filename, last_spiData_1 >> 1, AIN_num, mem_buffer, last_sample_time_per_section) == SUCCESS)
-                    qDebug("Data is saved in %s.\n", filename);
-                else
-                    qDebug("Data save error!\n");
+                if(last_spiData_1 > 0)
+                {
+                    /* 根据上一次的实际采样情况进行数据拷贝,保存数据到文件, 并将绘图数据拷贝到内存块 */
+                    if(save_and_plot_data(filename, last_spiData_1 >> 1, AIN_num, mem_buffer, last_sample_time_per_section) == SUCCESS)
+                        qDebug("Data is saved in %s.\n", filename);
+                    else
+                        qDebug("Data save error!\n");
 
-                /* 发送信号驱动绘图选项卡开始绘图 */
-                emit send_to_plot_pru_curve();
+                    /* 发送信号驱动绘图选项卡开始绘图 */
+                    emit send_to_plot_pru_curve();
+                }
+                else
+                {
+                    qDebug("Save_and_plot_data() was cancelled, there are no data in temp mem");
+                }
 
                 //sample task end ?
                 if(pru_sample_end)
@@ -200,13 +216,20 @@ void PRUThread::run()
                 //last_sample_time_per_section和last_spiData_1主要用于上一次的数据拷贝处理
                 last_sample_time_per_section = sample_time_per_section;
                 last_spiData_1 = spiData[1] - PRU_shared_mem_result[3];//根据PRU SHARED MEM空间返回的剩余空间计算消耗的空间，即计算采样字节数（bytes）
-                last_spiData_1 = last_spiData_1 - last_spiData_1 % (AIN_num * 2);
+                last_spiData_1 = last_spiData_1 - last_spiData_1 % (AIN_num * 2);//last_spiData_1表示行数
                 qDebug("last_spiData_1 = %u (the data less than one line were discarded.)", last_spiData_1);
                 qDebug("last_sample_time_per_section = %u", last_sample_time_per_section);
 
                 //fast memroy copy, prepare parameters for file saving
-                if(copy_data_to_buf(mem_buffer, last_spiData_1) == SUCCESS)//spiData[1] unit bytes,不足一行的部分丢弃
-                    qDebug("%u (bytes) data is copied.", last_spiData_1);
+                if(last_spiData_1 > 0)
+                {
+                    if(copy_data_to_buf(mem_buffer, last_spiData_1) == SUCCESS)//spiData[1] unit bytes,不足一行的部分丢弃
+                        qDebug("%u (bytes) data is copied.", last_spiData_1);
+                }
+                else
+                {
+                    qDebug("memcpy() was cancelled, there are no data in temp mem");
+                }
 
                 serial++;
             }
@@ -345,8 +368,18 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
 
     //4000000 16bit 总存储空间大小除以最终的采样频率，得出计时时间单元
     sample_clock_period_per_seconds = dataSize / (real_sample_freq * AIN_num * 2);
-    sample_clock_time_integer = (pru_sample_start.sample_time_hours * 3600 + pru_sample_start.sample_time_minutes * 60 + pru_sample_start.sample_time_seconds) / sample_clock_period_per_seconds;
-    sample_clock_time_remainder = (pru_sample_start.sample_time_hours * 3600 + pru_sample_start.sample_time_minutes * 60 + pru_sample_start.sample_time_seconds) % sample_clock_period_per_seconds;
+
+    if(pru_sample_start.sample_mode == TIMING)//定时模式下计算采样周期
+    {
+        sample_clock_time_integer = (pru_sample_start.sample_time_hours * 3600 + pru_sample_start.sample_time_minutes * 60 + pru_sample_start.sample_time_seconds) / sample_clock_period_per_seconds;
+        sample_clock_time_remainder = (pru_sample_start.sample_time_hours * 3600 + pru_sample_start.sample_time_minutes * 60 + pru_sample_start.sample_time_seconds) % sample_clock_period_per_seconds;
+    }
+    else if(pru_sample_start.sample_mode == MONITOR)//监测模式下保证sample_clock_time_integer不为0或者不递减即可,直到逻辑线程发来终结信号
+    {
+        sample_clock_time_integer = 10000;
+        sample_clock_time_remainder = 0;
+    }
+
     qDebug("sample_clock_period_per_seconds = %u", sample_clock_period_per_seconds);
     qDebug("there are(is) %u sample periods, and %u (s) sample remainder", sample_clock_time_integer, sample_clock_time_remainder);
     qDebug("the total time is %u.", sample_clock_time_integer * sample_clock_period_per_seconds + sample_clock_time_remainder);
@@ -369,6 +402,14 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
 void PRUThread::recei_fro_logicthread_pru_sample_stop()
 {
     qDebug("pru is ready to stop sample task");
+
+    //停止当前片段的pru采集
+    PRUADC_stop = 1;
+    prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 1, &PRUADC_stop, sizeof(unsigned int));
+
+    //结束采样循环
+    sample_clock_time_integer = 0;
+    sample_clock_time_remainder = 0;
 
 }
 
