@@ -8,6 +8,9 @@
 //串口数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 extern PLOT_DATA_BUF uart_plot_data_buf;
 
+//系统配置参数，保存于文件
+extern SYS_Para sys_para;
+
 Uart_Plot_Widget::Uart_Plot_Widget(QWidget *parent)
 {
     /* Qt color */
@@ -58,6 +61,8 @@ Qt::color1      1           1 pixel value (for bitmaps)
     Uart_Plot_Data_Buf.pp_data_int = NULL;
 
     uart_data_plot_height = UART_DATA_PLOT_HEIGHT;
+
+    pic.load(QString(E_NOSE_ONLINE_LOGO_UART));
 }
 
 //接收来串口线程的数据绘图命令
@@ -102,7 +107,7 @@ void Uart_Plot_Widget::paintEvent(QPaintEvent *event)
         QRect rect(10, 10, 460, 20);
         QFont font("Clearlyu", 12);
         painter.setFont(font);
-        painter.drawText(rect, Qt::AlignHCenter, Uart_Plot_Data_Buf.filename);//plot_para.pic_name.remove(SYS_FILE_PATH));
+        painter.drawText(rect, Qt::AlignHCenter, Uart_Plot_Data_Buf.filename.remove(sys_para.filepath));//plot_para.pic_name.remove(SYS_FILE_PATH));
 
         /* 设置视口（逻辑坐标） */
         painter.setWindow(0, 0, Uart_Plot_Data_Buf.buf_size, uart_data_plot_height);
@@ -139,16 +144,7 @@ void Uart_Plot_Widget::paintEvent(QPaintEvent *event)
     else
     {
         //qDebug("Uart_Plot_Data_Buf.valid_data_size = 0 or Uart_Plot_Data_Buf.p_uart_data = NULL, cann't plot!\n");
-
-        /* 不显示数据时，显示一张图片 */
-        QImage pic;
-
-        if(pic.load(QString(E_NOSE_ONLINE_LOGO)))
-        {
-            //qDebug() << "picture size:" << pic.size() << endl;
-            painter.drawImage(QPoint(30, 30), pic);
-        }
-
+        painter.drawImage(QPoint(30, 30), pic);
 
     }
 }

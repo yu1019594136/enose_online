@@ -14,14 +14,11 @@
 #include <sys/ioctl.h>
 #include <linux/types.h>
 #include <spidev.h>
-#include <GPIO.h>
 #include <stm32_spislave.h>
 
 static int spi_fd;						//spi设备文件句柄
 static int spibus_num = 1;				//SPI设备总线号
 static int spichipselect_num = 0;		//SPI片选号，a SPI device with chipselect C on bus B, you should see /dev/spidevB.C
-static GPIO_Init_Struct gpio_cs;		//用于片选线
-//GPIO_Init_Struct gpio_cs;		//用于片选线
 
 static uint32_t mode = 0;				//（POL，PHA），MODE0=（0,0）MODE1=（0,1）MODE2=（1,0）MODE3=（1,1）,POL=0表示时钟空闲为低电平，1为高电平；PHA=0表示采样发生在时钟的第一个跳变边沿，1表示第二个跳变边沿
 static uint8_t bits = 16;				//每次通信的比特长度，这个长度依从设备而不同
@@ -30,15 +27,10 @@ static uint16_t delay = 0;				//当有多个从设备时，本次通信传输完
 
 static struct spi_ioc_transfer tr;		//用于进行全双工通信配置，具体参考spidev.h
 
-void stm32_Init(int gpiocs)
+void stm32_Init()
 {
 	int ret;
 	char temp_str[50] = {0};
-
-	/* 将gpio_cs设置成输出（默认输出高电平），用作从设备的片选线 */
-//	gpio_cs.pin = gpiocs;
-//	gpio_cs.dir = OUTPUT_PIN;
-//	GPIO_Init(&gpio_cs);
 
 	/* 获取设备文件指针 */
 	sprintf(temp_str, "/dev/spidev%d.%d",spibus_num, spichipselect_num);//将整形参数转换成字符串
@@ -109,37 +101,13 @@ void stm32_Transfer(uint16_t *TxBuf, uint16_t *RxBuf, int len_in_bytes)
 	tr.rx_buf = (unsigned long)RxBuf;
 	tr.len = len_in_bytes;
 
-	/* 拉低片选线，使能从设备 */
-	//gpio_set_value(&gpio_cs, LOW);
-
 	/* 双向传输数据 */
 	SPI_Transfer(spi_fd, 1, &tr);
 
-	/* 拉高片选线，禁能从设备 */
-	//gpio_set_value(&gpio_cs, HIGH);
 }
 
-void getdata_stm32(uint16_t command, uint16_t *RxBuf)
-{
-	int i = 0;
-	uint16_t com = command;
-	uint16_t len = command & 0x00ff;
-	uint16_t temp = 0;
-
-	/* 发送指令给STM32 */
-	stm32_Transfer(&com, &temp, 2);
-
-	/* 接收回传的数据 */
-	for(i = 0; i < len; i++)
-	{
-		stm32_Transfer(&temp, RxBuf + i, 2);
-	}
-}
 void stm32_Close()
 {
 	/* 关闭SPI设备的文件指针 */
 	close(spi_fd);
-
-	/* 关闭片选线IO口 */
-	GPIO_Close(&gpio_cs);
 }

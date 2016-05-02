@@ -5,13 +5,17 @@
 #include <QString>
 
 /* 程序运行是所需要的一些配置文件存放路径 */
-#define E_NOSE_ONLINE_LOGO                  "/root/qi_enose_online/E-nose_online_Logo.png"
+#define E_NOSE_ONLINE_LOGO_UART             "/root/qi_enose_online/image/E-nose_online_Logo_uart.png"
+#define E_NOSE_ONLINE_LOGO_PRU              "/root/qi_enose_online/image/E-nose_online_Logo_pru.png"
+#define E_NOSE_ONLINE_LOGO_AIR              "/root/qi_enose_online/image/E-nose_online_Logo_air.png"
+#define E_NOSE_ONLINE_LOGO_SHT21            "/root/qi_enose_online/image/E-nose_online_Logo_sht21.png"
 #define PRUADC_BIN                          "/root/qi_enose_online/PRU_Code/PRUADC.bin"
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
+#define FILEPATH                            "/root/qi_enose_online/data/"
 
 #define PRU_PLOT_TIME_SPAN                  240 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               400 //
-#define AIR_DATA_PLOT_HEIGHT                100 //空气质量原始数据为占空比，周期100ms，高电平时间越长空气质量越差
+#define AIR_DATA_PLOT_HEIGHT                100000 //空气质量原始数据为占空比，周期100ms，高电平时间越长空气质量越差
 #define SHT21_DATA_PLOT_HEIGHT              50 //温湿度数据中，温度显示范围0-100°，湿度显示范围0%-100%
 #define PRU_MEMORY_SIZE                     8000000 //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
 
@@ -113,6 +117,7 @@ typedef struct{
 typedef struct{
     unsigned int time_span_pru_plot;//绘制PRU数据曲线时，数据点横跨的时间尺度，此参数用于计算降频频率
     unsigned int pru_memory_size; //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
+    QString filepath;//数据文件保存的目录
 
 } SYS_Para;
 

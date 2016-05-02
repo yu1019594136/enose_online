@@ -12,7 +12,7 @@ TARGET = enose_online
 TEMPLATE = app
 
 target.files = enose_online
-target.path = /root/qi_enose_online
+target.path = /root/qi_enose_online/bin
 INSTALLS = target
 
 SOURCES += main.cpp\

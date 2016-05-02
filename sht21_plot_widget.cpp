@@ -8,6 +8,9 @@
 //sht21_plot_data_buf;用于存储温湿度绘图数据
 extern PLOT_DATA_BUF sht21_plot_data_buf;
 
+//系统配置参数，保存于文件
+extern SYS_Para sys_para;
+
 Sht21_Plot_Widget::Sht21_Plot_Widget(QWidget *parent)
 {
     /* Qt color */
@@ -54,6 +57,8 @@ Qt::color1      1           1 pixel value (for bitmaps)
     Sht21_Plot_Data_Buf.pp_data_int = NULL;
 
     sht21_data_plot_height = SHT21_DATA_PLOT_HEIGHT;
+
+    pic.load(QString(E_NOSE_ONLINE_LOGO_SHT21));
 }
 
 //接收来sht21_air线程的数据绘图命令
@@ -96,7 +101,7 @@ void Sht21_Plot_Widget::paintEvent(QPaintEvent *event)
         QRect rect(10, 10, 460, 20);
         QFont font("Clearlyu", 12);
         painter.setFont(font);
-        painter.drawText(rect, Qt::AlignHCenter, Sht21_Plot_Data_Buf.filename);//plot_para.pic_name.remove(SYS_FILE_PATH));
+        painter.drawText(rect, Qt::AlignHCenter, Sht21_Plot_Data_Buf.filename.remove(sys_para.filepath));//plot_para.pic_name.remove(SYS_FILE_PATH));
 
         /* 设置视口（逻辑坐标） */
         painter.setWindow(0, 0, Sht21_Plot_Data_Buf.buf_size, sht21_data_plot_height);
@@ -152,16 +157,7 @@ void Sht21_Plot_Widget::paintEvent(QPaintEvent *event)
     else
     {
         //qDebug("Uart_Plot_Data_Buf.valid_data_size = 0 or Uart_Plot_Data_Buf.p_uart_data = NULL, cann't plot!\n");
-
-        /* 不显示数据时，显示一张图片 */
-        QImage pic;
-
-        if(pic.load(QString(E_NOSE_ONLINE_LOGO)))
-        {
-            //qDebug() << "picture size:" << pic.size() << endl;
-            painter.drawImage(QPoint(30, 30), pic);
-        }
-
+        painter.drawImage(QPoint(30, 30), pic);
 
     }
 }

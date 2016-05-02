@@ -23,6 +23,9 @@ private:
     PLOT_DATA_BUF Air_Plot_Data_Buf;
     unsigned int air_data_plot_height;
 
+    /* 不显示数据时，显示一张图片 */
+    QImage pic;
+
 public slots:
     /* 接收来串口线程的数据绘图命令 */
     void recei_fro_sht21_air_thread_air_plot();

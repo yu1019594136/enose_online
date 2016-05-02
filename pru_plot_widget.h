@@ -20,6 +20,7 @@ protected:
 private:
     QColor color[11];
     PLOT_DATA_BUF PRU_Plot_Data_Buf;
+    QImage pic;
 
 public slots:
     /* 接收来串口线程的数据绘图命令 */

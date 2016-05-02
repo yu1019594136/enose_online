@@ -25,6 +25,7 @@ void LogicThread::run()
     qDebug("logic thread starts");
 
     /* 从系统参数文件中读取配置参数，保存到sys_para */
+    sys_para.filepath = FILEPATH;
     // do something....
 
     usleep(100000);
@@ -55,9 +56,9 @@ void LogicThread::logictimer_timeout()
         logictimer->stop();
     }
 
-    //emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
+    emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
 
-    //emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
+    emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
 
     emit send_to_sht21_air_thread_sample_stop();//通知sht21_air线程停止采集温湿度数据和空气质量数据
 }
@@ -101,11 +102,11 @@ void LogicThread::recei_parse_GUI_data()
 
     //通知串口线程开始采集粉尘传感器数据
     uart_sample_start.display_size = gui_para.plot_data_num_dust;
-    uart_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_dust.txt");
+    uart_sample_start.filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_dust.txt");
 
     //通知PRU线程开始采集SENSOR数据
     pru_sample_start.display_size = gui_para.plot_data_num_sensor;
-    pru_sample_start.filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_sensor_");//PRU线程内部再追加序号尾缀
+    pru_sample_start.filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_sensor_");//PRU线程内部再追加序号尾缀
     pru_sample_start.sample_time_hours = gui_para.sample_time_hours;
     pru_sample_start.sample_time_minutes = gui_para.sample_time_minutes;
     pru_sample_start.sample_time_seconds = gui_para.sample_time_seconds;
@@ -126,15 +127,15 @@ void LogicThread::recei_parse_GUI_data()
     //通知sht21_air线程开始采集温湿度数据和空气质量数据
     sht21_air_sample_start.air_display_size = gui_para.plot_data_num_air;
     sht21_air_sample_start.air_period = gui_para.sample_period_air_ms;
-    sht21_air_sample_start.air_filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_air_qulity.txt");
+    sht21_air_sample_start.air_filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_air_qulity.txt");
 
     sht21_air_sample_start.sht21_display_size = gui_para.plot_data_num_sht21;
     sht21_air_sample_start.sht21_period = gui_para.sample_period_sht21_s;
-    sht21_air_sample_start.sht21_filename = datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_sht21.txt");;
+    sht21_air_sample_start.sht21_filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_sht21.txt");;
 
-    //emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
+    emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
 
-    //emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
+    emit send_to_pruthread_pru_sample_start(pru_sample_start);//通知pru线程开始采集数据
 
     emit send_to_sht21_air_thread_sample_start(sht21_air_sample_start);//通知sht21_air线程开始采集温湿度数据和空气质量数据
 

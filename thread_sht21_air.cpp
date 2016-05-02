@@ -1,12 +1,18 @@
 #include "thread_sht21_air.h"
 #include <stdio.h>
+#include <stdint.h>
 #include <QDebug>
 #include <unistd.h>
 #include <malloc.h>
 #include "sht21.h"
+#include "stm32_spislave.h"
 
 //sht21_plot_data_buf用于存储温湿度绘图数据, air_plot_data_buf;用于存储空气质量传感器绘图数据
 PLOT_DATA_BUF sht21_plot_data_buf, air_plot_data_buf;
+
+//spi spi通信
+uint16_t txbuf[5] = {0xfe00, 0xfe01, 0xfe02, 0xfe03, 0xffff};	//SPI通信发送缓冲区
+uint16_t rxbuf[5] = {0};	//SPI通信接收缓冲区
 
 Sht21_Air_Thread::Sht21_Air_Thread(QObject *parent) :
     QThread(parent)
@@ -50,6 +56,9 @@ void Sht21_Air_Thread::run()
 {
     int i = 0;
     float temp = 0.0, humidity = 0.0;
+    unsigned int duty1 = 0, duty2 = 0;
+
+    stm32_Init();
 
     qDebug("Sht21_Air_thread starts");
 
@@ -89,7 +98,31 @@ void Sht21_Air_Thread::run()
 
         if(air_sample_start)
         {
-            //qDebug("air do nothing");
+            for(i = 0; i < 5; i++)
+            {
+                stm32_Transfer(txbuf + i, rxbuf + i, 2);
+            }
+            duty1 = rxbuf[1] * 65536 + rxbuf[2];
+            duty2 = rxbuf[3] * 65536 + rxbuf[4];
+
+//            if(duty1 > 100000)
+//                duty1 = duty1 >> 1;
+//            if(duty2 > 100000)
+//                duty2 = duty2 >> 1;
+
+            fprintf(fp_air_data_file, "%u\t%u\n", duty1, duty2);
+
+            air_plot_data_buf.pp_data_int[0][air_plot_data_buf.index] = duty1;
+            air_plot_data_buf.pp_data_int[1][air_plot_data_buf.index++] = duty2;
+
+            if(air_plot_data_buf.index == air_plot_data_buf.buf_size)
+                air_plot_data_buf.index = 0;
+
+            if(air_plot_data_buf.valid_data_size < air_plot_data_buf.buf_size)
+                air_plot_data_buf.valid_data_size++;
+
+            emit send_to_plot_air_curve();
+
             air_sample_start = false;
         }
 
@@ -149,6 +182,8 @@ void Sht21_Air_Thread::run()
         air_plot_data_buf.pp_data_int = NULL;
         qDebug() << "air free last memory size";
     }
+
+    stm32_Close();
 
     qDebug("Sht21_Air_thread stopped");
 }

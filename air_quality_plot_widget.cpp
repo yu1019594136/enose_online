@@ -8,6 +8,9 @@
 //air_plot_data_buf;用于存储空气质量传感器绘图数据
 extern PLOT_DATA_BUF air_plot_data_buf;
 
+//系统配置参数，保存于文件
+extern SYS_Para sys_para;
+
 Air_Plot_Widget::Air_Plot_Widget(QWidget *parent)
 {
     /* Qt color */
@@ -54,6 +57,8 @@ Qt::color1      1           1 pixel value (for bitmaps)
     Air_Plot_Data_Buf.pp_data_int = NULL;
 
     air_data_plot_height = AIR_DATA_PLOT_HEIGHT;
+
+    pic.load(QString(E_NOSE_ONLINE_LOGO_AIR));
 }
 
 //接收来sht21_air线程的数据绘图命令
@@ -96,7 +101,7 @@ void Air_Plot_Widget::paintEvent(QPaintEvent *event)
         QRect rect(10, 10, 460, 20);
         QFont font("Clearlyu", 12);
         painter.setFont(font);
-        painter.drawText(rect, Qt::AlignHCenter, Air_Plot_Data_Buf.filename);//plot_para.pic_name.remove(SYS_FILE_PATH));
+        painter.drawText(rect, Qt::AlignHCenter, Air_Plot_Data_Buf.filename.remove(sys_para.filepath));//plot_para.pic_name.remove(SYS_FILE_PATH));
 
         /* 设置视口（逻辑坐标） */
         painter.setWindow(0, 0, Air_Plot_Data_Buf.buf_size, air_data_plot_height);
@@ -105,26 +110,53 @@ void Air_Plot_Widget::paintEvent(QPaintEvent *event)
 
         //qDebug("height = %u, width = %lu\n", UART_DATA_PLOT_HEIGHT, Uart_Plot_Data_Buf.data_size);
 
-        painter.setPen(QPen(color[1]));//red color
-
         //QPainterPath path;
 
+        if(Air_Plot_Data_Buf.valid_data_size < Air_Plot_Data_Buf.buf_size)//有效数据个数少于内存块大小时
+        {
+            painter.setPen(QPen(color[1]));
+            for(i = 0; i < Air_Plot_Data_Buf.valid_data_size; i++)
+            {
+                painter.drawPoint(i, -Air_Plot_Data_Buf.pp_data_int[0][i]);
+            }
+
+            painter.setPen(QPen(color[3]));
+            for(i = 0; i < Air_Plot_Data_Buf.valid_data_size; i++)
+            {
+                painter.drawPoint(i, -Air_Plot_Data_Buf.pp_data_int[1][i]);
+            }
+
+        }
+        else//有效数据个数等于内存块大小时
+        {
+            j = 0;
+            painter.setPen(QPen(color[1]));
+            for(i = Air_Plot_Data_Buf.index; i < Air_Plot_Data_Buf.buf_size; i++)
+            {
+                painter.drawPoint(j++, -Air_Plot_Data_Buf.pp_data_int[0][i]);
+            }
+            for(i = 0; i < Air_Plot_Data_Buf.index; i++)
+            {
+                painter.drawPoint(j++, -Air_Plot_Data_Buf.pp_data_int[0][i]);
+            }
+
+            j = 0;
+            painter.setPen(QPen(color[3]));
+            for(i = Air_Plot_Data_Buf.index; i < Air_Plot_Data_Buf.buf_size; i++)
+            {
+                painter.drawPoint(j++, -Air_Plot_Data_Buf.pp_data_int[1][i]);
+            }
+            for(i = 0; i < Air_Plot_Data_Buf.index; i++)
+            {
+                painter.drawPoint(j++, -Air_Plot_Data_Buf.pp_data_int[1][i]);
+            }
+        }
 
     }
     else
     {
         //qDebug("Uart_Plot_Data_Buf.valid_data_size = 0 or Uart_Plot_Data_Buf.p_uart_data = NULL, cann't plot!\n");
-
-        /* 不显示数据时，显示一张图片 */
-        QImage pic;
-
-        if(pic.load(QString(E_NOSE_ONLINE_LOGO)))
-        {
-            //qDebug() << "picture size:" << pic.size() << endl;
-            painter.drawImage(QPoint(30, 30), pic);
-        }
-
-
+        painter.drawImage(QPoint(30, 30), pic);
     }
 }
 
