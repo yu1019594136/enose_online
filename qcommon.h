@@ -125,6 +125,7 @@ typedef struct{
     unsigned int sht21_data_plot_height;
     unsigned int beep_counts;
     unsigned int beep_time;
+    QString USB_path;
 } SYS_Para;
 
 #endif // QCOMMON_H

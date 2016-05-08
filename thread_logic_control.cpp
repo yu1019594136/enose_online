@@ -157,6 +157,7 @@ void LogicThread::receive_task_report(int Task_finished_report)
 void LogicThread::recei_parse_GUI_data()
 {
     FILE *fp_plot_para = NULL;
+    char usb_path[1024] = {0};
 
     datetime = QDateTime::currentDateTime();
 
@@ -169,7 +170,8 @@ void LogicThread::recei_parse_GUI_data()
         fscanf(fp_plot_para, "sys_para.air_data_plot_height =\t%u\n\n", &sys_para.air_data_plot_height);
         fscanf(fp_plot_para, "sys_para.beep_counts =\t%u\n\n", &sys_para.beep_counts);
         fscanf(fp_plot_para, "sys_para.beep_time =\t%u\n\n", &sys_para.beep_time);
-        sys_para.filepath = FILEPATH;
+        fscanf(fp_plot_para, "sys_para.USB_path =\t%s\n\n", usb_path);
+        sys_para.USB_path = usb_path;
 
         fclose(fp_plot_para);
         fp_plot_para = NULL;
@@ -182,8 +184,16 @@ void LogicThread::recei_parse_GUI_data()
         sys_para.air_data_plot_height = AIR_DATA_PLOT_HEIGHT;
         sys_para.beep_counts = BEEP_COUNTS;
         sys_para.beep_time = BEEP_TIME;
+        sys_para.USB_path = FILEPATH;
         sys_para.filepath = FILEPATH;
     }
+
+    if(gui_para.data_save_mode == USB_DEVICE)
+        sys_para.filepath = sys_para.USB_path;
+    else
+        sys_para.filepath = FILEPATH;
+
+    qDebug() << "sys_para.USB_path = " << sys_para.filepath;
 
     //通知串口线程开始采集粉尘传感器数据
     uart_sample_start.display_size = gui_para.plot_data_num_dust;
@@ -242,7 +252,7 @@ void LogicThread::recei_parse_GUI_data()
 void LogicThread::record_GUI_para_to_file()
 {
     FILE *fp_record_para = NULL;
-    QString filename_QString = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + QString("para.txt");
+    QString filename_QString = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string + QString("_para.txt");
     char *filename_char, *str;
     QByteArray ba_filename, ba_str;
     unsigned int i = 0;
