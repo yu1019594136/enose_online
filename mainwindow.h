@@ -83,6 +83,8 @@ private:
     Air_Plot_Widget *air_plot_widget;//用于存储空气质量传感器绘图
     Sht21_Plot_Widget *sht21_plot_widget;//用于温湿度绘图
 
+    void GUI_init();//从默认参数文件读取参数初始化界面
+
 };
 
 #endif // MAINWINDOW_H

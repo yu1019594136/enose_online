@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
-<!-- Written by QtCreator 3.1.1, 2016-05-07T22:21:15. -->
+<!-- Written by QtCreator 3.1.1, 2016-05-08T02:02:13. -->
 <qtcreator>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -204,8 +204,8 @@
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_DYN-Debug/enose_online</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedHosts">
-       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
+       <value type="QString">192.168.1.102</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedRemotePaths">
        <value type="QString">/root/qi_enose_online</value>
@@ -216,8 +216,8 @@
        <value type="QString"></value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedTimes">
-       <value type="QDateTime">2016-04-10T04:04:21</value>
        <value type="QDateTime">2016-04-28T06:42:06</value>
+       <value type="QDateTime">2016-04-10T04:04:21</value>
       </valuelist>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.IgnoreMissingFiles">false</value>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.Incremental">true</value>
@@ -440,16 +440,16 @@
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName"></value>
       <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">RemoteLinux.DirectUploadStep</value>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedFiles">
-       <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Debug/enose_online</value>
-       <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Debug/enose_online</value>
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Release/enose_online</value>
+       <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Debug/enose_online</value>
+       <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Debug/enose_online</value>
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Release/enose_online</value>
        <value type="QString">/home/zy/qt_program/build-enose_online-BBB_QT_STATIC-Release/enose_online</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedHosts">
+       <value type="QString">192.168.1.102</value>
+       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
-       <value type="QString">192.168.1.102</value>
-       <value type="QString">192.168.1.102</value>
        <value type="QString">192.168.1.103</value>
        <value type="QString">192.168.1.103</value>
       </valuelist>
@@ -457,8 +457,8 @@
        <value type="QString">/root/qi_enose_online</value>
        <value type="QString">/root/qi_enose_online</value>
        <value type="QString">/root/qi_enose_online</value>
-       <value type="QString">/root/qi_enose_online/bin</value>
        <value type="QString">/root/qi_enose_online</value>
+       <value type="QString">/root/qi_enose_online/bin</value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedSysroots">
        <value type="QString"></value>
@@ -468,11 +468,11 @@
        <value type="QString"></value>
       </valuelist>
       <valuelist type="QVariantList" key="Qt4ProjectManager.MaemoRunConfiguration.LastDeployedTimes">
-       <value type="QDateTime">2016-04-10T05:44:49</value>
-       <value type="QDateTime">2016-04-10T04:12:22</value>
        <value type="QDateTime">2016-05-01T20:47:28</value>
-       <value type="QDateTime">2016-05-07T22:03:54</value>
+       <value type="QDateTime">2016-04-10T04:12:22</value>
+       <value type="QDateTime">2016-04-10T05:44:49</value>
        <value type="QDateTime">2016-04-28T07:29:15</value>
+       <value type="QDateTime">2016-05-08T02:01:17</value>
       </valuelist>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.IgnoreMissingFiles">false</value>
       <value type="bool" key="RemoteLinux.GenericDirectUploadStep.Incremental">true</value>

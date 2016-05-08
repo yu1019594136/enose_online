@@ -12,6 +12,7 @@
 #define PRUADC_BIN                          "/root/qi_enose_online/PRU_Code/PRUADC.bin"
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
 #define FILEPATH                            "/root/qi_enose_online/data/"
+#define DEFAULT_PARA_FILE                   "/root/qi_enose_online/config/default_para.txt"
 
 #define PRU_PLOT_TIME_SPAN                  240 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               400 //
@@ -71,7 +72,7 @@ typedef struct{
     unsigned long display_size; //显示数据点个数
     QString filename;   //保存数据文件名称, 仅仅需要时间戳和userstring, 文件序号需要PRU线程自己计算和添加
     float sample_freq;//每个通道的采样频率
-    bool AIN[11];//sensor采样通道情况,true表示采集, false表示不采集
+    unsigned int AIN[11];//sensor采样通道情况,true表示采集, false表示不采集
     unsigned int sample_time_hours;//每个通道的时间长度
     unsigned int sample_time_minutes;//每个通道的时间长度
     unsigned int sample_time_seconds;//每个通道的时间长度
@@ -101,15 +102,15 @@ typedef struct{
     int plot_data_num_sensor;
 
     //采样周期/频率
-    unsigned int sample_period_air_ms;
-    unsigned int sample_period_sht21_s;
+    int sample_period_air_ms;
+    int sample_period_sht21_s;
     double sample_freq_sensor;
 
     QString user_string;
     int data_save_mode;
 
     //sensor采样通道情况,true表示采集, false表示不采集
-    bool AIN[11];
+    unsigned int AIN[11];
 
     int sample_mode;
 

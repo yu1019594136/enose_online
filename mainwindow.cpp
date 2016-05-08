@@ -25,6 +25,8 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    GUI_init();
+
     /* 隐藏鼠标 */
     QWSServer::setCursorVisible(false);
 
@@ -55,12 +57,6 @@ MainWindow::MainWindow(QWidget *parent) :
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(timerUpdate()));
     timer->start(1000 * 60);//一分钟更新一次时间
-
-    //doublespinbox补充配置代码
-    ui->doubleSpinBox->setMinimum(0.0);
-    ui->doubleSpinBox->setMaximum(5000);
-    ui->doubleSpinBox->setSingleStep(0.01);
-    ui->doubleSpinBox->setValue(5000);
 
     //将参数界面2中的checkbox的槽函数连接
     connect(ui->checkBox, SIGNAL(stateChanged(int)), SLOT(checkbox_changed(int)));
@@ -436,3 +432,183 @@ void MainWindow::recei_fro_logicthread_enable_start()
     ui->pushButton_2->setEnabled(false);
     qDebug("enable start button, and disable stop button");
 }
+
+
+void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
+{
+    FILE *fp_default_para = NULL;
+    char temp_str[50] = {0};
+    char str[1024] = {0};
+    unsigned int i = 0;
+
+    //1、程序使用内置参数配置GUI_para或者使用默认参数文件来配置GUI_para
+    if((fp_default_para = fopen(DEFAULT_PARA_FILE, "r")) != NULL)//使用默认参数文件来配置GUI_para
+    {
+        fscanf(fp_default_para, "sample_time_hours =\t%d\n", &gui_para.sample_time_hours);
+        fscanf(fp_default_para, "sample_time_minutes =\t%d\n", &gui_para.sample_time_minutes);
+        fscanf(fp_default_para, "sample_time_seconds =\t%d\n\n", &gui_para.sample_time_seconds);
+
+        fscanf(fp_default_para, "plot_data_num_dust =\t%d\n", &gui_para.plot_data_num_dust);
+        fscanf(fp_default_para, "plot_data_num_air =\t%d\n", &gui_para.plot_data_num_air);
+        fscanf(fp_default_para, "plot_data_num_sht21 =\t%d\n", &gui_para.plot_data_num_sht21);
+        fscanf(fp_default_para, "plot_data_num_sensor =\t%d\n\n", &gui_para.plot_data_num_sensor);
+
+        fscanf(fp_default_para, "sample_period_air_ms =\t%d\n", &gui_para.sample_period_air_ms);
+        fscanf(fp_default_para, "sample_period_sht21_s =\t%d\n", &gui_para.sample_period_sht21_s);
+        fscanf(fp_default_para, "sample_freq_sensor =\t%lf\n\n", &gui_para.sample_freq_sensor);
+
+        fscanf(fp_default_para, "user_string =\t%s\n", str);
+        gui_para.user_string = str;
+        fscanf(fp_default_para, "data_save_mode =\t%d\n\n", &gui_para.data_save_mode);
+
+        for(i = 0; i < 11; i++)
+        {
+            fscanf(fp_default_para, "%s =\t%u\n", temp_str, &gui_para.AIN[i]);
+        }
+
+        fscanf(fp_default_para, "\nsample_mode =\t%d\n", &gui_para.sample_mode);
+
+        fclose(fp_default_para);
+    }
+    else//程序使用内置参数配置GUI_para
+    {
+        gui_para.sample_time_hours = 0;
+        gui_para.sample_time_minutes = 3;
+        gui_para.sample_time_seconds = 5;
+
+        gui_para.plot_data_num_dust = 300;
+        gui_para.plot_data_num_air = 600;
+        gui_para.plot_data_num_sht21 = 100;
+        gui_para.plot_data_num_sensor = 1000;
+
+        gui_para.sample_period_air_ms = 100;
+        gui_para.sample_period_sht21_s = 1;
+        gui_para.sample_freq_sensor = 5000.0;
+
+        gui_para.user_string = QString("zhouyu");
+        gui_para.data_save_mode = 0;
+
+        gui_para.AIN[0] = 0;
+        gui_para.AIN[1] = 0;
+        gui_para.AIN[2] = 1;
+        gui_para.AIN[3] = 1;
+        gui_para.AIN[4] = 1;
+        gui_para.AIN[5] = 1;
+        gui_para.AIN[6] = 1;
+        gui_para.AIN[7] = 1;
+        gui_para.AIN[8] = 1;
+        gui_para.AIN[9] = 0;
+        gui_para.AIN[10] = 1;
+
+        gui_para.sample_mode = 0;
+
+    }
+
+    //2、根据GUI_para来设置GUI控件参数
+    ui->spinBox->setValue(gui_para.sample_time_hours);
+    ui->spinBox_3->setValue(gui_para.sample_time_minutes);
+    ui->spinBox_2->setValue(gui_para.sample_time_seconds);
+
+    ui->spinBox_8->setValue(gui_para.plot_data_num_dust);
+    ui->spinBox_9->setValue(gui_para.plot_data_num_air);
+    ui->spinBox_10->setValue(gui_para.plot_data_num_sht21);
+    ui->spinBox_11->setValue(gui_para.plot_data_num_sensor);
+
+    ui->spinBox_5->setValue(gui_para.sample_period_air_ms);
+    ui->spinBox_6->setValue(gui_para.sample_period_sht21_s);
+
+    //doublespinbox补充配置代码
+    ui->doubleSpinBox->setMinimum(0.0);
+    ui->doubleSpinBox->setMaximum(5000);
+    ui->doubleSpinBox->setSingleStep(0.01);
+    ui->doubleSpinBox->setValue(gui_para.sample_freq_sensor);
+
+    ui->lineEdit->setText(gui_para.user_string);
+
+    if(gui_para.data_save_mode == LOCAL_HOST)
+    {
+        ui->radioButton_5->setChecked(true);
+        ui->radioButton->setChecked(false);
+        ui->radioButton_2->setChecked(false);
+    }
+    if(gui_para.data_save_mode == USB_DEVICE)
+    {
+        ui->radioButton_5->setChecked(false);
+        ui->radioButton->setChecked(true);
+        ui->radioButton_2->setChecked(false);
+    }
+    if(gui_para.data_save_mode == UPLOAD)
+    {
+        ui->radioButton_5->setChecked(false);
+        ui->radioButton->setChecked(false);
+        ui->radioButton_2->setChecked(true);
+    }
+
+    if(gui_para.AIN[0] == 1)
+        ui->checkBox_3->setChecked(true);
+    else
+        ui->checkBox_3->setChecked(false);
+
+    if(gui_para.AIN[1] == 1)
+        ui->checkBox_4->setChecked(true);
+    else
+        ui->checkBox_4->setChecked(false);
+
+    if(gui_para.AIN[2] == 1)
+        ui->checkBox_5->setChecked(true);
+    else
+        ui->checkBox_5->setChecked(false);
+
+    if(gui_para.AIN[3] == 1)
+        ui->checkBox_7->setChecked(true);
+    else
+        ui->checkBox_7->setChecked(false);
+
+    if(gui_para.AIN[4] == 1)
+        ui->checkBox_8->setChecked(true);
+    else
+        ui->checkBox_8->setChecked(false);
+
+    if(gui_para.AIN[5] == 1)
+        ui->checkBox_2->setChecked(true);
+    else
+        ui->checkBox_2->setChecked(false);
+
+    if(gui_para.AIN[6] == 1)
+        ui->checkBox_6->setChecked(true);
+    else
+        ui->checkBox_6->setChecked(false);
+
+    if(gui_para.AIN[7] == 1)
+        ui->checkBox->setChecked(true);
+    else
+        ui->checkBox->setChecked(false);
+
+    if(gui_para.AIN[8] == 1)
+        ui->checkBox_9->setChecked(true);
+    else
+        ui->checkBox_9->setChecked(false);
+
+    if(gui_para.AIN[9] == 1)
+        ui->checkBox_10->setChecked(true);
+    else
+        ui->checkBox_10->setChecked(false);
+
+    if(gui_para.AIN[10] == 1)
+        ui->checkBox_11->setChecked(true);
+    else
+        ui->checkBox_11->setChecked(false);
+
+    if(gui_para.sample_mode == TIMING)
+    {
+        ui->radioButton_3->setChecked(true);
+        ui->radioButton_4->setChecked(false);
+    }
+    if(gui_para.sample_mode == MONITOR)
+    {
+        ui->radioButton_3->setChecked(false);
+        ui->radioButton_4->setChecked(true);
+    }
+
+}
+
