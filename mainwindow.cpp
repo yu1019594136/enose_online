@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <unistd.h>
 #include <QWSServer>
 #include <QDateTime>
 #include <QDebug>
@@ -189,6 +190,27 @@ void MainWindow::recei_fro_logicthread_quit_application()
         sht21_air_thread->stop();
     while(!sht21_air_thread->isFinished());
 
+    pid_t new_pid;
+    char *const arg_shutdown[] = {"shutdown","-h","now",NULL};
+    if(ui->checkBox_12->isChecked())//如果勾选了quit按钮旁边的复选框则退出应用程序后会自动关机
+    {
+        new_pid = fork();
+
+        if(new_pid < 0)
+            qDebug("fork() failed!\n");
+        else if(new_pid == 0)//子进程运行内容
+        {
+            sleep(5);//seconds秒钟后关机
+            if(execve("/sbin/shutdown", arg_shutdown, NULL) == -1)
+            {
+                qDebug("shutdown in 5 seconds");
+            }
+        }
+        else//主进程运行内容
+        {
+            qDebug("Application quit!\n");
+        }
+    }
 
     /* 退出事件循环，结束程序 */
     QApplication *p;

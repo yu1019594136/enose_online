@@ -60,8 +60,6 @@ Qt::color1      1           1 pixel value (for bitmaps)
     Uart_Plot_Data_Buf.pp_data_float = NULL;
     Uart_Plot_Data_Buf.pp_data_int = NULL;
 
-    uart_data_plot_height = UART_DATA_PLOT_HEIGHT;
-
     pic.load(QString(E_NOSE_ONLINE_LOGO_UART));
 }
 
@@ -110,9 +108,9 @@ void Uart_Plot_Widget::paintEvent(QPaintEvent *event)
         painter.drawText(rect, Qt::AlignHCenter, Uart_Plot_Data_Buf.filename.remove(sys_para.filepath));//plot_para.pic_name.remove(SYS_FILE_PATH));
 
         /* 设置视口（逻辑坐标） */
-        painter.setWindow(0, 0, Uart_Plot_Data_Buf.buf_size, uart_data_plot_height);
+        painter.setWindow(0, 0, Uart_Plot_Data_Buf.buf_size, sys_para.uart_data_plot_height);
         /* 坐标系平移 */
-        painter.translate(0, uart_data_plot_height);
+        painter.translate(0, sys_para.uart_data_plot_height);
 
         //qDebug("height = %u, width = %lu\n", UART_DATA_PLOT_HEIGHT, Uart_Plot_Data_Buf.data_size);
 

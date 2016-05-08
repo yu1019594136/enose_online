@@ -56,8 +56,6 @@ Qt::color1      1           1 pixel value (for bitmaps)
     Sht21_Plot_Data_Buf.pp_data_float = NULL;
     Sht21_Plot_Data_Buf.pp_data_int = NULL;
 
-    sht21_data_plot_height = SHT21_DATA_PLOT_HEIGHT;
-
     pic.load(QString(E_NOSE_ONLINE_LOGO_SHT21));
 }
 
@@ -104,9 +102,9 @@ void Sht21_Plot_Widget::paintEvent(QPaintEvent *event)
         painter.drawText(rect, Qt::AlignHCenter, Sht21_Plot_Data_Buf.filename.remove(sys_para.filepath));//plot_para.pic_name.remove(SYS_FILE_PATH));
 
         /* 设置视口（逻辑坐标） */
-        painter.setWindow(0, 0, Sht21_Plot_Data_Buf.buf_size, sht21_data_plot_height);
+        painter.setWindow(0, 0, Sht21_Plot_Data_Buf.buf_size, sys_para.sht21_data_plot_height);
         /* 坐标系平移 */
-        painter.translate(0, sht21_data_plot_height);
+        painter.translate(0, sys_para.sht21_data_plot_height);
 
         //qDebug("height = %u, width = %lu\n", UART_DATA_PLOT_HEIGHT, Uart_Plot_Data_Buf.data_size);
 

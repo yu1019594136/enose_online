@@ -21,7 +21,6 @@ protected:
 private:
     QColor color[10];
     PLOT_DATA_BUF Air_Plot_Data_Buf;
-    unsigned int air_data_plot_height;
 
     /* 不显示数据时，显示一张图片 */
     QImage pic;

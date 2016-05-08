@@ -22,10 +22,7 @@ LogicThread::LogicThread(QObject *parent) :
     task_result = 0;
     quit_flag = false;
     record_para_to_file = false;
-
     beep_on_flag = false;
-    beep_counts = BEEP_COUNTS * 2;//算上鸣叫和不鸣叫的定时总次数
-    beep_time = BEEP_TIME;// unit ms
 
     logictimer = new QTimer (this);
     connect(logictimer, SIGNAL(timeout()), this, SLOT(logictimer_timeout()));
@@ -38,10 +35,6 @@ void LogicThread::run()
 {
     qDebug("logic thread starts");
 
-    /* 从系统参数文件中读取配置参数，保存到sys_para */
-    sys_para.filepath = FILEPATH;
-    // do something....
-
     beep_init();
 
     usleep(100000);
@@ -50,9 +43,8 @@ void LogicThread::run()
     {
         if(beep_on_flag)
         {
-            beep_time = BEEP_TIME;// unit ms
-            beeptimer->start(beep_time);
-            beep_counts = BEEP_COUNTS * 2 - 1;//算上鸣叫和不鸣叫的定时总次数
+            beeptimer->start(sys_para.beep_time);
+            sys_para.beep_counts = sys_para.beep_counts * 2 - 1;//算上鸣叫和不鸣叫的定时总次数
 
             beep_on_flag = false;
         }
@@ -81,35 +73,39 @@ void LogicThread::stop()
 //定时器溢出或者stop被按下都将产生相同的动作：结束各个采样任务，因此定时器溢出的槽函数和stop按钮按下后触发的逻辑线程槽函数可以为同一个
 void LogicThread::logictimer_timeout()
 {
-
-    if(logictimer->isActive())
+    if(gui_para.sample_mode == TIMING)
     {
-        qDebug() << "logictimer time out!";
-        logictimer->stop();
+        if(logictimer->isActive())
+        {
+            qDebug() << "logictimer time out!";
+            logictimer->stop();
+        }
+    }
+    else if(gui_para.sample_mode == MONITOR)//仅仅监测模式下逻辑线程需要发信号去停止PRU线程
+    {
+        emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
     }
 
     emit send_to_uartthread_sample_stop();//通知串口线程停止数据采集
-
-    emit send_to_pruthread_sample_stop();//通知pru线程停止采集数据
 
     emit send_to_sht21_air_thread_sample_stop();//通知sht21_air线程停止采集温湿度数据和空气质量数据
 }
 
 void LogicThread::beeptimer_timeout()
 {
-    if(beep_counts == 0)
+    if(sys_para.beep_counts == 0)
     {
         beeptimer->stop();
         beep_off();
     }
     else
     {
-        if(beep_counts % 2 == 0)
+        if(sys_para.beep_counts % 2 == 0)
             beep_off();
         else
             beep_on();
 
-        beep_counts--;
+        sys_para.beep_counts--;
     }
 
 }
@@ -139,11 +135,11 @@ void LogicThread::receive_task_report(int Task_finished_report)
 
     if((task_result & UART_COMPLETED) && (task_result & PRU_COMPLETED) && (task_result & SHT21_AIR_COMPLETED))//任务都完成了
     {
-        if(quit_flag)
+        if(quit_flag)//采集任务中途直接按下quit按钮
         {
             emit send_to_GUI_quit_application();
         }
-        else
+        else//采集任务结束后按下stop按钮
         {
             emit send_to_GUI_enbale_start();
             quit_flag = false;
@@ -160,7 +156,34 @@ void LogicThread::receive_task_report(int Task_finished_report)
 //接收和解析界面参数，开始通知其他线程采集数据
 void LogicThread::recei_parse_GUI_data()
 {
+    FILE *fp_plot_para = NULL;
+
     datetime = QDateTime::currentDateTime();
+
+    //读取绘图相关配置参数
+    if((fp_plot_para = fopen(CONFIG_PARA_FILE, "r")) != NULL)
+    {
+        fscanf(fp_plot_para, "sys_para.pru_plot_time_span =\t%u\n\n", &sys_para.pru_plot_time_span);
+        fscanf(fp_plot_para, "sys_para.uart_data_plot_height =\t%u\n\n", &sys_para.uart_data_plot_height);
+        fscanf(fp_plot_para, "sys_para.sht21_data_plot_height =\t%u\n\n", &sys_para.sht21_data_plot_height);
+        fscanf(fp_plot_para, "sys_para.air_data_plot_height =\t%u\n\n", &sys_para.air_data_plot_height);
+        fscanf(fp_plot_para, "sys_para.beep_counts =\t%u\n\n", &sys_para.beep_counts);
+        fscanf(fp_plot_para, "sys_para.beep_time =\t%u\n\n", &sys_para.beep_time);
+        sys_para.filepath = FILEPATH;
+
+        fclose(fp_plot_para);
+        fp_plot_para = NULL;
+    }
+    else
+    {
+        sys_para.pru_plot_time_span = PRU_PLOT_TIME_SPAN;
+        sys_para.uart_data_plot_height = UART_DATA_PLOT_HEIGHT;
+        sys_para.sht21_data_plot_height = SHT21_DATA_PLOT_HEIGHT;
+        sys_para.air_data_plot_height = AIR_DATA_PLOT_HEIGHT;
+        sys_para.beep_counts = BEEP_COUNTS;
+        sys_para.beep_time = BEEP_TIME;
+        sys_para.filepath = FILEPATH;
+    }
 
     //通知串口线程开始采集粉尘传感器数据
     uart_sample_start.display_size = gui_para.plot_data_num_dust;
@@ -193,7 +216,7 @@ void LogicThread::recei_parse_GUI_data()
 
     sht21_air_sample_start.sht21_display_size = gui_para.plot_data_num_sht21;
     sht21_air_sample_start.sht21_period = gui_para.sample_period_sht21_s;
-    sht21_air_sample_start.sht21_filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_sht21.txt");;
+    sht21_air_sample_start.sht21_filename = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + gui_para.user_string +QString("_sht21.txt");
 
     emit send_to_uartthread_sample_start(uart_sample_start);//通知串口线程开始数据采集
 

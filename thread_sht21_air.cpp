@@ -185,13 +185,13 @@ void Sht21_Air_Thread::recei_fro_logicthread_sht21_air_sample_start(SHT21_AIR_SA
     int i;
 
     sht21_air_sample_start = Sht21_air_sample_start;
-    qDebug() << "sht21_air_sample_start.air_display_size = " << sht21_air_sample_start.air_display_size;
-    qDebug() << "sht21_air_sample_start.air_filename = " << sht21_air_sample_start.air_filename;
-    qDebug() << "sht21_air_sample_start.air_period = " << sht21_air_sample_start.air_period;
+//    qDebug() << "sht21_air_sample_start.air_display_size = " << sht21_air_sample_start.air_display_size;
+//    qDebug() << "sht21_air_sample_start.air_filename = " << sht21_air_sample_start.air_filename;
+//    qDebug() << "sht21_air_sample_start.air_period = " << sht21_air_sample_start.air_period;
 
-    qDebug() << "sht21_air_sample_start.sht21_display_size = " << sht21_air_sample_start.sht21_display_size;
-    qDebug() << "sht21_air_sample_start.sht21_filename = " << sht21_air_sample_start.sht21_filename;
-    qDebug() << "sht21_air_sample_start.sht21_period = " << sht21_air_sample_start.sht21_period;
+//    qDebug() << "sht21_air_sample_start.sht21_display_size = " << sht21_air_sample_start.sht21_display_size;
+//    qDebug() << "sht21_air_sample_start.sht21_filename = " << sht21_air_sample_start.sht21_filename;
+//    qDebug() << "sht21_air_sample_start.sht21_period = " << sht21_air_sample_start.sht21_period;
 
     /*=============================for sht21============================================*/
     /* 检查是否重新分配空间 */

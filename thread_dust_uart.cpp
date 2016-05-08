@@ -125,10 +125,6 @@ void UartThread::run()
                 qDebug("start point lost, capture again");
             }
 
-            //test
-//            read(fd_uart, uart_data_buffer, 1);
-//            qDebug("uart_data_buffer[0] = 0x%x", uart_data_buffer[0]);
-
         }
 
         if(fd_close_flag)

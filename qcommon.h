@@ -13,12 +13,12 @@
 #define PRUClock_BIN                        "/root/qi_enose_online/PRU_Code/PRUClock.bin"
 #define FILEPATH                            "/root/qi_enose_online/data/"
 #define DEFAULT_PARA_FILE                   "/root/qi_enose_online/config/default_para.txt"
+#define CONFIG_PARA_FILE                    "/root/qi_enose_online/config/config_para.txt"
 
-#define PRU_PLOT_TIME_SPAN                  240 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
-#define UART_DATA_PLOT_HEIGHT               400 //
+#define PRU_PLOT_TIME_SPAN                  300 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
+#define UART_DATA_PLOT_HEIGHT               600 //
 #define AIR_DATA_PLOT_HEIGHT                100000 //空气质量原始数据为占空比，周期100ms，高电平时间越长空气质量越差
-#define SHT21_DATA_PLOT_HEIGHT              50 //温湿度数据中，温度显示范围0-100°，湿度显示范围0%-100%
-#define PRU_MEMORY_SIZE                     8000000 //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
+#define SHT21_DATA_PLOT_HEIGHT              100 //温湿度数据中，温度显示范围0-100°，湿度显示范围0%-100%
 #define BEEP_COUNTS                         3 //鸣叫次数
 #define BEEP_TIME                           500 //unit ms
 
@@ -118,10 +118,13 @@ typedef struct{
 
 //系统配置参数，保存于文件
 typedef struct{
-    unsigned int time_span_pru_plot;//绘制PRU数据曲线时，数据点横跨的时间尺度，此参数用于计算降频频率
-    unsigned int pru_memory_size; //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
     QString filepath;//数据文件保存的目录
-
+    unsigned int uart_data_plot_height;
+    unsigned int pru_plot_time_span;//绘制PRU数据曲线时，数据点横跨的时间尺度，此参数用于计算降频频率
+    unsigned int air_data_plot_height;
+    unsigned int sht21_data_plot_height;
+    unsigned int beep_counts;
+    unsigned int beep_time;
 } SYS_Para;
 
 #endif // QCOMMON_H

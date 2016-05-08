@@ -54,9 +54,6 @@ unsigned short int mem_buffer[MAX_BUFFER_SIZE] = {0};
 
 //保存从文件中读取的配置参数
 extern SYS_Para sys_para;
-//pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔
-unsigned int pru_plot_time_span;
-unsigned int pru_memory_size;
 
 PRUThread::PRUThread(QObject *parent) :
     QThread(parent)
@@ -84,8 +81,6 @@ PRUThread::PRUThread(QObject *parent) :
     sample_time_per_section = 0;
     last_sample_time_per_section = 0;
     last_spiData_1 = 0;
-
-    pru_plot_time_span = PRU_PLOT_TIME_SPAN;// = sys_para.time_span_pru_plot
 }
 
 void PRUThread::run()
@@ -532,10 +527,10 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
 
    //计算分频因子
    qDebug("Sample_time_per_section = %u", Sample_time_per_section);
-   factor = (pru_plot_time_span * numberOutputSamples) / (Sample_time_per_section * pru_plot_data_buf.buf_size * AIN_NUM);
+   factor = (sys_para.pru_plot_time_span * numberOutputSamples) / (Sample_time_per_section * pru_plot_data_buf.buf_size * AIN_NUM);
    qDebug("factor = %d", factor);
 
-   if(pru_plot_time_span >= Sample_time_per_section)
+   if(sys_para.pru_plot_time_span >= Sample_time_per_section)
    {
         for(i = 0; i < numberOutputSamples / AIN_NUM; i++)
         {
@@ -558,7 +553,7 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
    }
    else
    {
-       start_index = ((Sample_time_per_section - pru_plot_time_span) * (numberOutputSamples / AIN_NUM)) / Sample_time_per_section;
+       start_index = ((Sample_time_per_section - sys_para.pru_plot_time_span) * (numberOutputSamples / AIN_NUM)) / Sample_time_per_section;
        //qDebug("start_index = %u", start_index);
 
        for(i = start_index; i < numberOutputSamples / AIN_NUM; i++)
