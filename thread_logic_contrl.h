@@ -6,6 +6,7 @@
 #include <QString>
 #include <QTimer>
 #include "qcommon.h"
+#include <QDateTime>
 
 /*********************串口线程*****************************/
 class LogicThread : public QThread
@@ -17,6 +18,7 @@ public:
 
 protected:
     void run();
+    void record_GUI_para_to_file();
 
 private:
     volatile bool stopped;
@@ -26,6 +28,9 @@ private:
     unsigned int beep_counts;
     unsigned int beep_time;
     QTimer *beeptimer;
+
+    QDateTime datetime;
+    bool record_para_to_file;
 
     int task_result;//该变量用于记录任务完成状况
     //当bit1 = 1,表示串口采集数据完成

@@ -294,7 +294,7 @@ void PRUThread::recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_samp
 
     /* 解析采样通道情况 */
     AIN_num_temp = 0;
-    for(i = 0; i < sizeof(pru_sample_start.AIN)/sizeof(bool); i++)
+    for(i = 0; i < sizeof(pru_sample_start.AIN)/sizeof(unsigned int); i++)
         AIN_num_temp += pru_sample_start.AIN[i];
 
     qDebug() << "total sample channels = " << AIN_num_temp;

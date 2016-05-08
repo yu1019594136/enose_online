@@ -21,6 +21,7 @@ LogicThread::LogicThread(QObject *parent) :
     stopped = false;
     task_result = 0;
     quit_flag = false;
+    record_para_to_file = false;
 
     beep_on_flag = false;
     beep_counts = BEEP_COUNTS * 2;//算上鸣叫和不鸣叫的定时总次数
@@ -54,6 +55,12 @@ void LogicThread::run()
             beep_counts = BEEP_COUNTS * 2 - 1;//算上鸣叫和不鸣叫的定时总次数
 
             beep_on_flag = false;
+        }
+
+        if(record_para_to_file)
+        {
+            record_para_to_file = false;
+            record_GUI_para_to_file();
         }
 
     }
@@ -153,7 +160,7 @@ void LogicThread::receive_task_report(int Task_finished_report)
 //接收和解析界面参数，开始通知其他线程采集数据
 void LogicThread::recei_parse_GUI_data()
 {
-    QDateTime datetime = QDateTime::currentDateTime();
+    datetime = QDateTime::currentDateTime();
 
     //通知串口线程开始采集粉尘传感器数据
     uart_sample_start.display_size = gui_para.plot_data_num_dust;
@@ -203,7 +210,60 @@ void LogicThread::recei_parse_GUI_data()
     }
 
     beep_on_flag = false;
+    record_para_to_file = true;
 
     //任务结果状态回归
     task_result = UNDEFINED;
+}
+
+void LogicThread::record_GUI_para_to_file()
+{
+    FILE *fp_record_para = NULL;
+    QString filename_QString = sys_para.filepath + datetime.toString("yyyy.MM.dd-hh_mm_ss_") + QString("para.txt");
+    char *filename_char, *str;
+    QByteArray ba_filename, ba_str;
+    unsigned int i = 0;
+
+    ba_filename = filename_QString.toLatin1();
+    filename_char = ba_filename.data();
+
+    if((fp_record_para = fopen(filename_char, "w")) != NULL)
+    {
+        fprintf(fp_record_para, "sample_time_hours =\t%d\n", gui_para.sample_time_hours);
+        fprintf(fp_record_para, "sample_time_minutes =\t%d\n", gui_para.sample_time_minutes);
+        fprintf(fp_record_para, "sample_time_seconds =\t%d\n\n", gui_para.sample_time_seconds);
+
+        fprintf(fp_record_para, "plot_data_num_dust =\t%d\n", gui_para.plot_data_num_dust);
+        fprintf(fp_record_para, "plot_data_num_air =\t%d\n", gui_para.plot_data_num_air);
+        fprintf(fp_record_para, "plot_data_num_sht21 =\t%d\n", gui_para.plot_data_num_sht21);
+        fprintf(fp_record_para, "plot_data_num_sensor =\t%d\n\n", gui_para.plot_data_num_sensor);
+
+        fprintf(fp_record_para, "sample_period_air_ms =\t%d\n", gui_para.sample_period_air_ms);
+        fprintf(fp_record_para, "sample_period_sht21_s =\t%d\n", gui_para.sample_period_sht21_s);
+        fprintf(fp_record_para, "sample_freq_sensor =\t%lf\n\n", gui_para.sample_freq_sensor);
+
+        ba_str = gui_para.user_string.toLatin1();
+        str = ba_str.data();
+        fprintf(fp_record_para, "user_string =\t%s\n", str);
+
+        if(gui_para.data_save_mode == LOCAL_HOST)
+            fprintf(fp_record_para, "data_save_mode =\tLOCAL_HOST\n\n");
+        else if(gui_para.data_save_mode == USB_DEVICE)
+            fprintf(fp_record_para, "data_save_mode =\tUSB_DEVICE\n\n");
+        else if(gui_para.data_save_mode == UPLOAD)
+            fprintf(fp_record_para, "data_save_mode =\tUPLOAD\n\n");
+
+        for(i = 0; i < 11; i++)
+        {
+            fprintf(fp_record_para, "AIN[%u] =\t%u\n", i, gui_para.AIN[i]);
+        }
+
+        if(gui_para.sample_mode == TIMING)
+            fprintf(fp_record_para, "\nsample_mode =\tTIMING\n");
+        else if(gui_para.sample_mode == MONITOR)
+            fprintf(fp_record_para, "\nsample_mode =\tMONITOR\n");
+
+        fclose(fp_record_para);
+        fp_record_para = NULL;
+    }
 }
