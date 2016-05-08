@@ -1,4 +1,5 @@
 #include "thread_logic_contrl.h"
+#include "beep.h"
 #include <QDebug>
 #include <unistd.h>
 #include <QDateTime>
@@ -9,15 +10,27 @@ extern GUI_Para gui_para;
 //系统配置参数，保存于文件
 SYS_Para sys_para;
 
+//该全局变量向逻辑线程表明，当前应该发send_to_GUI_enbale_start()通知GUI
+//线程使能start按钮，准备下一次采样，还是发send_to_GUI_quit_application()
+//通知GUI线程退出应用程序。
+extern bool quit_flag;
+
 LogicThread::LogicThread(QObject *parent) :
     QThread(parent)
 {
     stopped = false;
     task_result = 0;
+    quit_flag = false;
+
+    beep_on_flag = false;
+    beep_counts = BEEP_COUNTS * 2;//算上鸣叫和不鸣叫的定时总次数
+    beep_time = BEEP_TIME;// unit ms
 
     logictimer = new QTimer (this);
     connect(logictimer, SIGNAL(timeout()), this, SLOT(logictimer_timeout()));
 
+    beeptimer = new QTimer (this);
+    connect(beeptimer, SIGNAL(timeout()), this, SLOT(beeptimer_timeout()));
 }
 
 void LogicThread::run()
@@ -28,14 +41,26 @@ void LogicThread::run()
     sys_para.filepath = FILEPATH;
     // do something....
 
+    beep_init();
+
     usleep(100000);
 
     while(!stopped)
     {
+        if(beep_on_flag)
+        {
+            beep_time = BEEP_TIME;// unit ms
+            beeptimer->start(beep_time);
+            beep_counts = BEEP_COUNTS * 2 - 1;//算上鸣叫和不鸣叫的定时总次数
+
+            beep_on_flag = false;
+        }
 
     }
 
     stopped = false;
+
+    beep_close();
 
     qDebug("logic thread stopped");
 }
@@ -63,6 +88,25 @@ void LogicThread::logictimer_timeout()
     emit send_to_sht21_air_thread_sample_stop();//通知sht21_air线程停止采集温湿度数据和空气质量数据
 }
 
+void LogicThread::beeptimer_timeout()
+{
+    if(beep_counts == 0)
+    {
+        beeptimer->stop();
+        beep_off();
+    }
+    else
+    {
+        if(beep_counts % 2 == 0)
+            beep_off();
+        else
+            beep_on();
+
+        beep_counts--;
+    }
+
+}
+
 //其他线程的结束工作汇报。
 void LogicThread::receive_task_report(int Task_finished_report)
 {
@@ -86,11 +130,22 @@ void LogicThread::receive_task_report(int Task_finished_report)
         qDebug() << "a wrong report is received by logic";
     }
 
-    task_result = task_result | UART_COMPLETED;
-    task_result = task_result | PRU_COMPLETED;
     if((task_result & UART_COMPLETED) && (task_result & PRU_COMPLETED) && (task_result & SHT21_AIR_COMPLETED))//任务都完成了
     {
-        emit send_to_GUI_enbale_start();
+        if(quit_flag)
+        {
+            emit send_to_GUI_quit_application();
+        }
+        else
+        {
+            emit send_to_GUI_enbale_start();
+            quit_flag = false;
+
+            //驱动蜂鸣器
+            qDebug("all sample task are completed, beep on!");
+            beep_on_flag = true;
+        }
+
     }
 
 }
@@ -146,6 +201,8 @@ void LogicThread::recei_parse_GUI_data()
         if(logictimer->isActive())
             logictimer->stop();
     }
+
+    beep_on_flag = false;
 
     //任务结果状态回归
     task_result = UNDEFINED;

@@ -14,6 +14,11 @@ Q_DECLARE_METATYPE(SHT21_AIR_SAMPLE_START)
 //读取界面参数并发通知逻辑线程开始数据采集
 GUI_Para gui_para;
 
+//该全局变量向逻辑线程表明，当前应该发send_to_GUI_enbale_start()通知GUI
+//线程使能start按钮，准备下一次采样，还是发send_to_GUI_quit_application()
+//通知GUI线程退出应用程序。
+bool quit_flag = false;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
@@ -131,6 +136,11 @@ MainWindow::MainWindow(QWidget *parent) :
     /* sht21_air线程通知逻辑线程采样结束 */
     connect(sht21_air_thread, SIGNAL(send_to_logic_sht21_air_sample_complete(int)), logicthread, SLOT(receive_task_report(int)), Qt::QueuedConnection);
 
+    /* quit按钮按下通知逻辑线程结束其他线程的采集任务 */
+    connect(this, SIGNAL(send_to_logicthread_abort_sample_tasks()), logicthread, SLOT(logictimer_timeout()), Qt::QueuedConnection);
+    connect(logicthread, SIGNAL(send_to_GUI_quit_application()), this, SLOT(recei_fro_logicthread_quit_application()), Qt::QueuedConnection);
+    connect(this, SIGNAL(quit_application()), this, SLOT(recei_fro_logicthread_quit_application()), Qt::QueuedConnection);
+
     uartthread->start();
     logicthread->start();
     pruthread->start();
@@ -147,6 +157,24 @@ MainWindow::~MainWindow()
 }
 
 void MainWindow::on_quit_clicked()
+{
+    ui->quit->setEnabled(false);
+
+    if(ui->pushButton->isEnabled())//如果start按钮处于使能状态说明，当前没有采样任务，quit按钮按下后可以直接退出程序
+    {
+        emit quit_application();
+        qDebug("quit application");
+    }
+    else//如果start按钮处于禁能状态说明，当前有采样任务正在进行，quit按钮按下后应该先通知逻辑线程终止各采集任务
+    {
+        quit_flag = true;
+        emit send_to_logicthread_abort_sample_tasks();
+        qDebug("abort sample tasks, then quit application");
+    }
+
+}
+
+void MainWindow::recei_fro_logicthread_quit_application()
 {
     if(logicthread->isRunning())
         logicthread->stop();

@@ -18,6 +18,8 @@
 #define AIR_DATA_PLOT_HEIGHT                100000 //空气质量原始数据为占空比，周期100ms，高电平时间越长空气质量越差
 #define SHT21_DATA_PLOT_HEIGHT              50 //温湿度数据中，温度显示范围0-100°，湿度显示范围0%-100%
 #define PRU_MEMORY_SIZE                     8000000 //PRU允许使用的内存空间大小，注意：最大不能超过8000000 bytes
+#define BEEP_COUNTS                         3 //鸣叫次数
+#define BEEP_TIME                           500 //unit ms
 
 //数据采集模式
 enum SAMPLE_MODE{

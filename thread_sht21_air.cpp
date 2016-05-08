@@ -141,19 +141,19 @@ void Sht21_Air_Thread::run()
     stopped = false;
 
     //有时候stop信号还没发过来，或者计时时间还未到，用户突然按下quit要退出程序，此时应该在退出程序前把未保存的数据（虽然不完整）任然保存到文件
-    if(fp_sht21_data_file)
-    {
-        fclose(fp_sht21_data_file);
-        fp_sht21_data_file = NULL;
-        qDebug("fp_sht21_data_file is closed, data is saved  in %s\nquit button was pressed", sht21_filename);
-    }
+//    if(fp_sht21_data_file)
+//    {
+//        fclose(fp_sht21_data_file);
+//        fp_sht21_data_file = NULL;
+//        qDebug("fp_sht21_data_file is closed, data is saved  in %s\nquit button was pressed", sht21_filename);
+//    }
 
-    if(fp_air_data_file)
-    {
-        fclose(fp_air_data_file);
-        fp_air_data_file = NULL;
-        qDebug("fp_air_data_file is closed, data is saved in %s\nquit button was pressed", air_filename);
-    }
+//    if(fp_air_data_file)
+//    {
+//        fclose(fp_air_data_file);
+//        fp_air_data_file = NULL;
+//        qDebug("fp_air_data_file is closed, data is saved in %s\nquit button was pressed", air_filename);
+//    }
 
     //突然停止线程时必须释放申请的内存空间
     if(sht21_plot_data_buf.pp_data_float != NULL)

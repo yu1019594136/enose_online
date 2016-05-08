@@ -172,24 +172,24 @@ void UartThread::run()
     }
     uart_plot_data_buf.p_data = NULL;
 
-    //关闭设备文件句柄
-    //有时候stop信号还没发过来，或者计时时间还未到，用户突然按下quit要退出程序，此时应该在退出程序前把未保存的数据（虽然不完整）任然保存到文件
-    if(fd_uart != -1)
-    {
-        close(fd_uart);
-        fd_uart = -1;
+//    //关闭设备文件句柄
+//    //有时候stop信号还没发过来，或者计时时间还未到，用户突然按下quit要退出程序，此时应该在退出程序前把未保存的数据（虽然不完整）任然保存到文件
+//    if(fd_uart != -1)
+//    {
+//        close(fd_uart);
+//        fd_uart = -1;
 
-        qDebug() << "close(fd_uart), stop buttom is pressed when sample task is running";
-    }
-    //关闭文件名char句柄
-    if(fp_data_file != NULL)
-    {
-        fclose(fp_data_file);
-        fp_data_file = NULL;
+//        qDebug() << "close(fd_uart), stop buttom is pressed when sample task is running";
+//    }
+//    //关闭文件名char句柄
+//    if(fp_data_file != NULL)
+//    {
+//        fclose(fp_data_file);
+//        fp_data_file = NULL;
 
-        qDebug() << "fclose(fp_data_file), stop buttom is pressed when sample task is running";
-        qDebug() << "uart data is saved in " << uart_sample_start.filename;
-    }
+//        qDebug() << "fclose(fp_data_file), stop buttom is pressed when sample task is running";
+//        qDebug() << "uart data is saved in " << uart_sample_start.filename;
+//    }
 
     qDebug("uart thread stopped");
 

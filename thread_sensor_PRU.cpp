@@ -212,14 +212,14 @@ void PRUThread::run()
                 PRU_shared_mem_result[3] = *(sharedMem_int + 3);
 
                 qDebug("sharedMem1 = %u\nsharedMem2 = %u\nsharedMem3 = 0x%x\nsharedMem4 = %u.\n", PRU_shared_mem_result[0], PRU_shared_mem_result[1], PRU_shared_mem_result[2], PRU_shared_mem_result[3]);
-                qDebug("%u data was sampled", spiData[1] - PRU_shared_mem_result[3]);
+                qDebug("%u byte data in temp memory", spiData[1] - PRU_shared_mem_result[3]);
 
                 //sample_time_per_section和spiData[1]主要用于这次的采样配置
                 //last_sample_time_per_section和last_spiData_1主要用于上一次的数据拷贝处理
                 last_sample_time_per_section = sample_time_per_section;
                 last_spiData_1 = spiData[1] - PRU_shared_mem_result[3];//根据PRU SHARED MEM空间返回的剩余空间计算消耗的空间，即计算采样字节数（bytes）
                 last_spiData_1 = last_spiData_1 - last_spiData_1 % (AIN_num * 2);//last_spiData_1表示行数
-                qDebug("last_spiData_1 = %u (the data less than one line were discarded.)", last_spiData_1);
+                qDebug("last_spiData_1 = %u (unit bytes, the data less than one line were discarded.)", last_spiData_1);
                 qDebug("last_sample_time_per_section = %u", last_sample_time_per_section);
 
                 //fast memroy copy, prepare parameters for file saving
@@ -265,15 +265,15 @@ void PRUThread::run()
 void PRUThread::stop()
 {
     //有时候stop信号还没发过来，或者计时时间还未到，用户突然按下quit要退出程序，此时应该在退出程序前把未保存的数据（虽然不完整）任然保存到文件
-    qDebug("pru is ready to stop sample task when quit button was pressed");
+//    qDebug("pru is ready to stop sample task when quit button was pressed");
 
-    //停止当前片段的pru采集
-    PRUADC_stop = 1;
-    prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 1, &PRUADC_stop, sizeof(unsigned int));
+//    //停止当前片段的pru采集
+//    PRUADC_stop = 1;
+//    prussdrv_pru_write_memory(PRUSS0_SHARED_DATARAM, 1, &PRUADC_stop, sizeof(unsigned int));
 
-    //结束采样循环
-    sample_clock_time_integer = 0;
-    sample_clock_time_remainder = 0;
+//    //结束采样循环
+//    sample_clock_time_integer = 0;
+//    sample_clock_time_remainder = 0;
 
     stopped = true;
 }

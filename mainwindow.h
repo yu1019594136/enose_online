@@ -53,12 +53,21 @@ public slots:
     //逻辑线程发送信号给GUI线程，所有任务已经结束
     void recei_fro_logicthread_enable_start();
 
+    //执行退出应用程序的槽函数
+    void recei_fro_logicthread_quit_application();
+
 signals:
     //发送信号通知控制线程，界面参数已经读取
     void send_to_logic_GUI_data();
 
     //stop button is pressed
     void send_to_logic_stop_pressed();
+
+    //通知逻辑线程结束其他线程的采集任务
+    void send_to_logicthread_abort_sample_tasks();
+
+    //quit application
+    void quit_application();
 
 
 private:
