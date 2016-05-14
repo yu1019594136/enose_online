@@ -4,6 +4,19 @@
 #include <unistd.h>
 #include <QDateTime>
 
+#include <QtCore/QTextStream>
+#include <QtCore/QFile>
+#include <QtCore/QIODevice>
+#include <QMessageBox>
+
+//压缩任务队列初始化
+Queue *compress_queue = NULL;
+unsigned int compress_data_queue_max_len;//队列最大长度
+
+//上传任务队列初始化
+Queue *upload_queue = NULL;
+unsigned int upload_file_queue_max_len;//队列最大长度
+
 //读取界面参数并发通知逻辑线程开始数据采集
 extern GUI_Para gui_para;
 
@@ -29,6 +42,11 @@ LogicThread::LogicThread(QObject *parent) :
 
     beeptimer = new QTimer (this);
     connect(beeptimer, SIGNAL(timeout()), this, SLOT(beeptimer_timeout()));
+
+    //压缩任务队列初始化
+    Queue_Init(&compress_queue, QString(COMPRESS_TASK_FILE));
+    //上传任务队列初始化
+    Queue_Init(&upload_queue, QString(UPLOAD_TASK_FILE));
 }
 
 void LogicThread::run()
@@ -38,6 +56,13 @@ void LogicThread::run()
     beep_init();
 
     usleep(100000);
+
+    //启动进程查看队列中是否有未完成任务
+    qDebug("compress_data_queue_max_len = %u\n", compress_data_queue_max_len);
+    qDebug("upload_file_queue_max_len = %u\n", upload_file_queue_max_len);
+
+    qDebug() << "compress_queue len = " << GetQueueLength(compress_queue);
+    qDebug() << "upload_queue len = " << GetQueueLength(upload_queue);
 
     while(!stopped)
     {
@@ -60,6 +85,10 @@ void LogicThread::run()
     stopped = false;
 
     beep_close();
+
+    //将队列保存到文件，以便下次程序启动时可以恢复本次未完成的任务;释放队列本身
+    Queue_Save(&compress_queue, COMPRESS_TASK_FILE);
+    Queue_Save(&upload_queue, UPLOAD_TASK_FILE);
 
     qDebug("logic thread stopped");
 }
@@ -299,4 +328,57 @@ void LogicThread::record_GUI_para_to_file()
         fclose(fp_record_para);
         fp_record_para = NULL;
     }
+}
+
+void Queue_Init(Queue **queue, QString filepath)
+{
+    *queue = InitQueue();
+
+    QFile file(filepath);
+    //方式：Append为追加，WriteOnly，ReadOnly
+    if (!file.open(QIODevice::ReadOnly|QIODevice::Text))
+    {
+        qDebug() << "can not find file:" << filepath << "\nqueue is empty.";
+    }
+    else
+    {
+        QTextStream in(&file);
+
+        while(!in.atEnd())
+        {
+            //insert to queue
+            InsertQueue(*queue, in.readLine());
+        }
+        //show queue length
+        qDebug() << "queue was initiated by file " << filepath << "\nlen = " << GetQueueLength(*queue);
+
+        file.close();
+    }
+}
+
+void Queue_Save(Queue **queue, QString filepath)
+{
+    QFile file(filepath);
+    //方式：Append为追加，WriteOnly，ReadOnly
+    if (!file.open(QIODevice::WriteOnly|QIODevice::Text))
+    {
+        qDebug() << "can not find file:" << filepath << "\nqueue can not be saved.";
+    }
+    else
+    {
+        QTextStream out(&file);
+        int len = GetQueueLength(*queue);
+
+        while(len > 0)
+        {
+            out << *GetQueueHead(*queue) << "\n";
+            DelQueue(*queue);
+            len--;
+        }
+
+        qDebug() << "A queue is saved to file " << filepath;
+
+        file.close();
+    }
+
 }

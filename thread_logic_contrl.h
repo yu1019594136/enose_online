@@ -7,6 +7,7 @@
 #include <QTimer>
 #include "qcommon.h"
 #include <QDateTime>
+#include "queue.h"
 
 /*********************串口线程*****************************/
 class LogicThread : public QThread
@@ -82,5 +83,10 @@ private slots:
     void beeptimer_timeout();
 
 };
+
+//从文件读取任务，将任务放入队列管理
+void Queue_Init(Queue **queue, QString filepath);
+
+void Queue_Save(Queue **queue, QString filepath);
 
 #endif // THREAD_LOGIC_CONTRL_H

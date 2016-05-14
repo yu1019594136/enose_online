@@ -14,6 +14,10 @@
 #define FILEPATH                            "/root/qi_enose_online/data/"
 #define DEFAULT_PARA_FILE                   "/root/qi_enose_online/config/default_para.txt"
 #define CONFIG_PARA_FILE                    "/root/qi_enose_online/config/config_para.txt"
+#define COMPRESS_TASK_FILE                  "/root/qi_enose_online/config/compress_task.txt"
+#define UPLOAD_TASK_FILE                    "/root/qi_enose_online/config/upload_task.txt"
+#define COMPRESS_SCRIPTS                    "/root/qi_enose_online/scripts/compress_data.sh"
+#define UPLOAD_SCRIPTS                      "/root/qi_enose_online/scripts/upload_file.sh"
 
 #define PRU_PLOT_TIME_SPAN                  300 //pru绘图曲线的时间跨度，表示整条曲线从最左端的采样点到最右端采样点之间的时间间隔, per second
 #define UART_DATA_PLOT_HEIGHT               600 //

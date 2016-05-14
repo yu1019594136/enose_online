@@ -35,7 +35,8 @@ SOURCES += main.cpp\
     pru_plot_widget.cpp \
     sht21_plot_widget.cpp \
     air_quality_plot_widget.cpp \
-    thread_sht21_air.cpp
+    thread_sht21_air.cpp \
+    queue.cpp
 
 HEADERS  += mainwindow.h \
     common.h \
@@ -56,7 +57,8 @@ HEADERS  += mainwindow.h \
     pru_plot_widget.h \
     sht21_plot_widget.h \
     air_quality_plot_widget.h \
-    thread_sht21_air.h
+    thread_sht21_air.h \
+    queue.h
 
 FORMS    += mainwindow.ui \
     myinputpanelform.ui

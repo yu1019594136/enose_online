@@ -83,7 +83,6 @@ private:
 
     //每阶段的采样时间长度
     unsigned int sample_time_per_section;
-
     unsigned int last_sample_time_per_section;
     unsigned int last_spiData_1;
 

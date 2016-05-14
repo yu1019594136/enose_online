@@ -20,12 +20,17 @@ GUI_Para gui_para;
 //通知GUI线程退出应用程序。
 bool quit_flag = false;
 
+//队列最大长度
+extern unsigned int compress_data_queue_max_len;
+extern unsigned int upload_file_queue_max_len;
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
 
+    //界面控件初始化
     GUI_init();
 
     /* 隐藏鼠标 */
@@ -488,7 +493,10 @@ void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
             fscanf(fp_default_para, "%s =\t%u\n", temp_str, &gui_para.AIN[i]);
         }
 
-        fscanf(fp_default_para, "\nsample_mode =\t%d\n", &gui_para.sample_mode);
+        fscanf(fp_default_para, "\nsample_mode =\t%d\n\n", &gui_para.sample_mode);
+
+        fscanf(fp_default_para, "compress_data_queue_max_len =\t%u\n", &compress_data_queue_max_len);
+        fscanf(fp_default_para, "upload_file_queue_max_len =\t%u\n\n", &upload_file_queue_max_len);
 
         fclose(fp_default_para);
     }
@@ -523,6 +531,9 @@ void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
         gui_para.AIN[10] = 1;
 
         gui_para.sample_mode = 0;
+
+        compress_data_queue_max_len = 1;
+        upload_file_queue_max_len = 5;
 
     }
 
@@ -633,4 +644,3 @@ void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
     }
 
 }
-
