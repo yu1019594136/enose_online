@@ -6,6 +6,10 @@
 #include <malloc.h>
 #include "sht21.h"
 #include "stm32_spislave.h"
+#include "queue.h"
+
+//压缩任务队列
+extern Queue *compress_queue;
 
 //sht21_plot_data_buf用于存储温湿度绘图数据, air_plot_data_buf;用于存储空气质量传感器绘图数据
 PLOT_DATA_BUF sht21_plot_data_buf, air_plot_data_buf;
@@ -326,6 +330,9 @@ void Sht21_Air_Thread::recei_fro_logicthread_sht21_air_sample_stop()
 
     sht21_sample_stop = true;
     air_sample_stop = true;
+
+    InsertQueue(compress_queue, sht21_air_sample_start.sht21_filename);
+    InsertQueue(compress_queue, sht21_air_sample_start.air_filename);
 
     task_completed = SHT21_AIR_COMPLETED;
     emit send_to_logic_sht21_air_sample_complete(task_completed);

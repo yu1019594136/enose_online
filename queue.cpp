@@ -65,12 +65,31 @@ void DelQueue(Queue *queue)
 //获取队首元素
 QString* GetQueueHead(Queue *queue)
 {
-    if(queue != NULL)
+    if(queue)
     {
         if(queue->head)
             return queue->head->dat;
     }
     return NULL;
+}
+
+//获取队列前i个元素
+QStringList GetQueue_ahead_element(Queue *queue, int num)
+{
+    Node *p = NULL;
+    p = queue->head;
+    QStringList arguments;
+
+    if(queue && GetQueueLength(queue) >= num)
+    {
+        for(int i = 0; i < num; i++)
+        {
+            arguments << *(p->dat);
+            p = p->next;
+        }
+    }
+
+    return arguments;
 }
 
 //清除队列中所有元素

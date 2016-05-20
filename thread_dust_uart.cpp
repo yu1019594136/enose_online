@@ -4,6 +4,10 @@
 #include <unistd.h>
 #include <malloc.h>
 #include "uart.h"
+#include "queue.h"
+
+//压缩任务队列
+extern Queue *compress_queue;
 
 //串口数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 PLOT_DATA_BUF uart_plot_data_buf;
@@ -144,11 +148,12 @@ void UartThread::run()
                 fclose(fp_data_file);
                 fp_data_file = NULL;
 
-                qDebug() << "fclose(fp_data_file)";
                 qDebug() << "uart data is saved in " << uart_sample_start.filename;
             }
 
             fd_close_flag = false;//无需重复关闭,该开关，在stop槽函数中变为true
+
+            InsertQueue(compress_queue, uart_sample_start.filename);
 
             //通知逻辑线程串口数据采集完毕
             Task_completed = UART_COMPLETED;

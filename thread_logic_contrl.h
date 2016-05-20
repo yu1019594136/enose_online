@@ -8,6 +8,7 @@
 #include "qcommon.h"
 #include <QDateTime>
 #include "queue.h"
+#include <QProcess>
 
 /*********************串口线程*****************************/
 class LogicThread : public QThread
@@ -23,6 +24,7 @@ protected:
 
 private:
     volatile bool stopped;
+    bool upload_flag;
     QTimer *logictimer; //用于逻辑控制的定时器，定时模式使用
 
     bool beep_on_flag;
@@ -42,6 +44,9 @@ private:
     UART_SAMPLE_START uart_sample_start;
     PRU_SAMPLE_START pru_sample_start;
     SHT21_AIR_SAMPLE_START sht21_air_sample_start;
+
+    QProcess *compress_process;
+    QProcess *upload_process;
 
 signals:
     //逻辑线程发送此信号给串口线程通知串口线程开始数据采集
@@ -68,6 +73,12 @@ signals:
     //通知GUI线程退出应用程序
     void send_to_GUI_quit_application();
 
+    void terminate_compress_process();
+    void terminate_upload_process();
+
+    void start_compress_data();
+    void start_upload_file();
+
 public slots:
     //接受各个线程的采集任务结果报告
     void receive_task_report(int Task_finished_report);
@@ -75,12 +86,29 @@ public slots:
     //接收和解析界面参数
     void recei_parse_GUI_data();
 
+    void compress_queue_check();
+    void upload_queue_check();
+
 private slots:
     //定时器时间到达时用于发送其他线程通知其停止数据采集，或者更新本定时器定时时间
     void logictimer_timeout();
 
     //beep on
     void beeptimer_timeout();
+
+    /*
+    将压缩数据和上传文件分开成两个步骤，分别用进程实现的原因，因为开发板空间有限，所
+    以压缩数据必须要进行；而上传任务在室外环境下无法实现，但此时压缩数据功能仍然需要。
+    */
+    void compress_process_started();
+    void compress_process_error(QProcess::ProcessError processerror);
+    void compress_process_readyreadoutput();
+    void compress_process_finished(int i,QProcess::ExitStatus exitstate);
+
+    void upload_process_started();
+    void upload_process_error(QProcess::ProcessError processerror);
+    void upload_process_readyreadoutput();
+    void upload_process_finished(int i,QProcess::ExitStatus exitstate);
 
 };
 

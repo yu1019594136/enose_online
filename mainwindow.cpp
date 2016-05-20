@@ -21,8 +21,8 @@ GUI_Para gui_para;
 bool quit_flag = false;
 
 //队列最大长度
-extern unsigned int compress_data_queue_max_len;
-extern unsigned int upload_file_queue_max_len;
+extern int compress_data_queue_max_len;
+extern int upload_file_queue_max_len;
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -143,6 +143,9 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(logicthread, SIGNAL(send_to_GUI_quit_application()), this, SLOT(recei_fro_logicthread_quit_application()), Qt::QueuedConnection);
     connect(this, SIGNAL(quit_application()), this, SLOT(recei_fro_logicthread_quit_application()), Qt::QueuedConnection);
 
+    /* PRU线程可以启动数据压缩进程 */
+    connect(pruthread, SIGNAL(send_to_logicthread_start_compress_data()), logicthread, SLOT(compress_queue_check()), Qt::QueuedConnection);
+
     uartthread->start();
     logicthread->start();
     pruthread->start();
@@ -178,10 +181,6 @@ void MainWindow::on_quit_clicked()
 
 void MainWindow::recei_fro_logicthread_quit_application()
 {
-    if(logicthread->isRunning())
-        logicthread->stop();
-    while(!logicthread->isFinished());
-
     //检查线程是否为运行状态
     if(uartthread->isRunning())
         uartthread->stop();
@@ -194,6 +193,10 @@ void MainWindow::recei_fro_logicthread_quit_application()
     if(sht21_air_thread->isRunning())
         sht21_air_thread->stop();
     while(!sht21_air_thread->isFinished());
+
+    if(logicthread->isRunning())
+        logicthread->stop();
+    while(!logicthread->isFinished());
 
     pid_t new_pid;
     char *const arg_shutdown[] = {"shutdown","-h","now",NULL};

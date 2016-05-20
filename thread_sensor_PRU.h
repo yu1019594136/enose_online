@@ -92,6 +92,9 @@ signals:
     //通知绘图选项卡开始绘制曲线
     void send_to_plot_pru_curve();
 
+    //开始数据压缩
+    void send_to_logicthread_start_compress_data();
+
 public slots:
     //接收逻辑线程发过来的参数
     void recei_fro_logicthread_pru_sample_start(PRU_SAMPLE_START Pru_sample_start);

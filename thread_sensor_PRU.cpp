@@ -17,6 +17,8 @@
 #include <signal.h>
 #include <error.h>
 
+#include "queue.h"
+
 /*--------------PRU header-------------*/
 #include "prussdrv.h"
 #include "pruss_intc_mapping.h"
@@ -54,6 +56,9 @@ unsigned short int mem_buffer[MAX_BUFFER_SIZE] = {0};
 
 //保存从文件中读取的配置参数
 extern SYS_Para sys_para;
+
+//压缩任务队列
+extern Queue *compress_queue;
 
 PRUThread::PRUThread(QObject *parent) :
     QThread(parent)
@@ -158,6 +163,9 @@ void PRUThread::run()
                         qDebug("Data is saved in %s.\n", filename);
                     else
                         qDebug("Data save error!\n");
+
+                    InsertQueue(compress_queue, pru_plot_data_buf.filename);
+                    emit send_to_logicthread_start_compress_data();
 
                     /* 发送信号驱动绘图选项卡开始绘图 */
                     emit send_to_plot_pru_curve();

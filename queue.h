@@ -3,6 +3,7 @@
 
 #include <QDebug>
 #include <QString>
+#include <QStringList>
 
 typedef struct NODE
 {
@@ -27,6 +28,9 @@ void DelQueue(Queue *queue);
 
 //获取队首元素
 QString * GetQueueHead(Queue *queue);
+
+//获取队列前i个元素
+QStringList GetQueue_ahead_element(Queue *queue, int num);
 
 //清除队列中所有元素
 void ClearQueue(Queue *queue);
