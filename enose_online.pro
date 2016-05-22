@@ -16,7 +16,7 @@ target.path = /root/qi_enose_online/bin
 INSTALLS = target
 
 #关闭release中qDebug的输出
-#DEFINES += QT_NO_DEBUG_OUTPUT
+DEFINES += QT_NO_DEBUG_OUTPUT
 
 SOURCES += main.cpp\
         mainwindow.cpp \

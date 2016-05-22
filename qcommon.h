@@ -42,7 +42,6 @@ enum SAMPLE_STATUS{
 enum DATA_SAVE{
     LOCAL_HOST = 0,
     USB_DEVICE = 1,
-    UPLOAD
 };
 
 //采集任务类型
@@ -51,6 +50,13 @@ enum TASK_TYPE{
     UART_COMPLETED          = 1,
     PRU_COMPLETED           = 2,
     SHT21_AIR_COMPLETED     = 4
+};
+
+//upload_file.sh运行模式
+enum UPLOAD_SCRIPT_RUN_MODE{
+    UPLOAD_OPEN = 0,
+    UPLOAD_FILE = 1,
+    UPLOAD_CLOSE
 };
 
 //逻辑线程通知串口线程开始采集数据

@@ -5,7 +5,9 @@
 #include <malloc.h>
 #include "uart.h"
 #include "queue.h"
+#include <QMutex>
 
+extern QMutex mutex_compress;
 //压缩任务队列
 extern Queue *compress_queue;
 
@@ -153,7 +155,9 @@ void UartThread::run()
 
             fd_close_flag = false;//无需重复关闭,该开关，在stop槽函数中变为true
 
+            mutex_compress.lock();
             InsertQueue(compress_queue, uart_sample_start.filename);
+            mutex_compress.unlock();
 
             //通知逻辑线程串口数据采集完毕
             Task_completed = UART_COMPLETED;

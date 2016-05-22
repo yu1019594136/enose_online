@@ -8,6 +8,10 @@
 #include "stm32_spislave.h"
 #include "queue.h"
 
+#include <QMutex>
+
+extern QMutex mutex_compress;
+
 //压缩任务队列
 extern Queue *compress_queue;
 
@@ -331,8 +335,10 @@ void Sht21_Air_Thread::recei_fro_logicthread_sht21_air_sample_stop()
     sht21_sample_stop = true;
     air_sample_stop = true;
 
+    mutex_compress.lock();
     InsertQueue(compress_queue, sht21_air_sample_start.sht21_filename);
     InsertQueue(compress_queue, sht21_air_sample_start.air_filename);
+    mutex_compress.unlock();
 
     task_completed = SHT21_AIR_COMPLETED;
     emit send_to_logic_sht21_air_sample_complete(task_completed);

@@ -17,6 +17,10 @@
 #include <signal.h>
 #include <error.h>
 
+#include <QMutex>
+
+extern QMutex mutex_compress;
+
 #include "queue.h"
 
 /*--------------PRU header-------------*/
@@ -164,7 +168,10 @@ void PRUThread::run()
                     else
                         qDebug("Data save error!\n");
 
+                    mutex_compress.lock();
                     InsertQueue(compress_queue, pru_plot_data_buf.filename);
+                    mutex_compress.unlock();
+
                     emit send_to_logicthread_start_compress_data();
 
                     /* 发送信号驱动绘图选项卡开始绘图 */

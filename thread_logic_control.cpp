@@ -10,6 +10,10 @@
 #include <QMessageBox>
 #include <QStringList>
 
+#include <QMutex>
+
+QMutex mutex_compress;
+
 //压缩任务队列
 Queue *compress_queue = NULL;
 int compress_data_queue_max_len;//队列最大长度
@@ -70,7 +74,7 @@ LogicThread::LogicThread(QObject *parent) :
     connect(upload_process, SIGNAL(finished(int,QProcess::ExitStatus)), this, SLOT(upload_process_finished(int,QProcess::ExitStatus)));
     connect(this, SIGNAL(terminate_upload_process()), upload_process, SLOT(terminate()));
 
-    connect(this, SIGNAL(start_upload_file()), this, SLOT(upload_queue_check()), Qt::QueuedConnection);
+    connect(this, SIGNAL(start_upload_file(int)), this, SLOT(upload_queue_check(int)), Qt::QueuedConnection);
 }
 
 void LogicThread::run()
@@ -81,7 +85,9 @@ void LogicThread::run()
 
     //程序启动后自动启动进程查看队列中是否有未完成任务
     emit start_compress_data();
-    emit start_upload_file();
+
+    int mode = UPLOAD_OPEN;//UPLOAD_OPEN for net test
+    emit start_upload_file(mode);
 
     usleep(100000);
 
@@ -344,8 +350,6 @@ void LogicThread::record_GUI_para_to_file()
             fprintf(fp_record_para, "data_save_mode =\tLOCAL_HOST\n\n");
         else if(gui_para.data_save_mode == USB_DEVICE)
             fprintf(fp_record_para, "data_save_mode =\tUSB_DEVICE\n\n");
-        else if(gui_para.data_save_mode == UPLOAD)
-            fprintf(fp_record_para, "data_save_mode =\tUPLOAD\n\n");
 
         for(i = 0; i < 11; i++)
         {
@@ -361,7 +365,9 @@ void LogicThread::record_GUI_para_to_file()
         fp_record_para = NULL;
 
         //将参数文件列入压缩队列
+        mutex_compress.lock();
         InsertQueue(compress_queue, filename_QString);
+        mutex_compress.unlock();
     }
 }
 
@@ -439,6 +445,7 @@ void LogicThread::compress_process_readyreadoutput()
 void LogicThread::compress_process_finished(int i,QProcess::ExitStatus exitstate)
 {
     QString filename;
+    int mode;
 
     qDebug() << "compress_process finish, exit code = " << i << endl;
 
@@ -447,19 +454,22 @@ void LogicThread::compress_process_finished(int i,QProcess::ExitStatus exitstate
         qDebug() << "compress process exited normally.";
 
         //从队列中移除已经完成的任务，并将其转移到upload_file_queue队列
+        mutex_compress.lock();
         for(int i = 0; i < compress_data_queue_max_len; i++)
         {
             filename = *GetQueueHead(compress_queue) + ".tar.gz";
             DelQueue(compress_queue);
             InsertQueue(upload_queue, filename);
         }
+        mutex_compress.unlock();
 
         //start new compress task
         emit start_compress_data();
 
         //start upload task
         qDebug() << "upload queue len = " << GetQueueLength(upload_queue);
-        emit start_upload_file();
+        mode = UPLOAD_FILE;
+        emit start_upload_file(mode);
     }
 
 }
@@ -484,6 +494,8 @@ void LogicThread::upload_process_readyreadoutput()
 
 void LogicThread::upload_process_finished(int i,QProcess::ExitStatus exitstate)
 {
+    int mode;
+
     qDebug() << "upload_process finish, exit code = " << i << endl;
 
     //if(exitstate == QProcess::NormalExit)
@@ -499,7 +511,8 @@ void LogicThread::upload_process_finished(int i,QProcess::ExitStatus exitstate)
 
         //start upload task
         qDebug() << "upload queue len = " << GetQueueLength(upload_queue);
-        emit start_upload_file();
+        mode = UPLOAD_FILE;
+        emit start_upload_file(mode);//本次传输成功，紧接着启动一下一次传输
     }
     else if(i == 1)//IP不存在
     {
@@ -508,26 +521,36 @@ void LogicThread::upload_process_finished(int i,QProcess::ExitStatus exitstate)
         qDebug() << "Host is unreachable";
         //此时不应该继续启动上传文件脚本，应该等用户配置好之后手动点击复选框时再来触发启动脚本
     }
-    else if(i == 2)//某文件名对应的文件不存在
+    else if(i == 2)//IP存在, 某文件名对应的文件不存在
     {
         upload_flag = false;
         qDebug() << "File is not exits";
         //此时不应该继续启动上传文件脚本，应该等用户配置好之后手动点击复选框时再来触发启动脚本
     }
-    else if(i == 3)//路径不可达
+    else if(i == 3)//IP存在, 路径不可达
     {
         upload_flag = false;
-        qDebug() << "ACC@IP:FilePath is unreachable";
+        qDebug() << "ACC or FilePath is wrong";
         //此时不应该继续启动上传文件脚本，应该等用户配置好之后手动点击复选框时再来触发启动脚本
     }
+    else if(i == 4)//网络测试成功
+    {
+        upload_flag = true;
+        qDebug() << "Net test succeed";
+        mode = UPLOAD_FILE;
+        emit start_upload_file(mode);//网络测试成功紧接着启动一下一次传输
+    }
+
+    //向GUI线程报告脚本运行结果
+    emit send_to_GUI_netreport(i);
 }
 
 void LogicThread::compress_queue_check()
 {
-    int len = GetQueueLength(compress_queue);
-
     if(compress_process->state() == QProcess::NotRunning)//进程状态是空闲
     {
+        mutex_compress.lock();
+        int len = GetQueueLength(compress_queue);
 
         if(len < compress_data_queue_max_len)//检查队列长度是否达到上限
         {
@@ -540,8 +563,9 @@ void LogicThread::compress_queue_check()
             //qDebug() << arguments;
 
             compress_process->start(COMPRESS_SCRIPTS, arguments);
-            qDebug("%d compress task in compress queue\n%d compress task ahead were submitted to compress_data.sh\n", GetQueueLength(compress_queue), compress_data_queue_max_len);
+            qDebug("%d compress task in compress queue\n%d compress task ahead were submitted to compress_data.sh\n", len, compress_data_queue_max_len);
         }
+        mutex_compress.unlock();
     }
     else
     {
@@ -549,36 +573,62 @@ void LogicThread::compress_queue_check()
     }
 }
 
-void LogicThread::upload_queue_check()
+void LogicThread::upload_queue_check(int operation_code)
 {
-    int len = GetQueueLength(upload_queue);
-
-    if(upload_flag)//
+    if(operation_code == UPLOAD_CLOSE)
     {
+        upload_flag = false;
+    }
+    else if(operation_code == UPLOAD_FILE)
+    {
+        if(upload_flag)//
+        {
+            if(upload_process->state() == QProcess::NotRunning)//进程状态是空闲
+            {
+                int len = GetQueueLength(upload_queue);
+
+                if(len < upload_file_queue_max_len)//检查队列长度是否达到上限
+                {
+                    qDebug("upload queue len(%d) is smaller than %d", len, upload_file_queue_max_len);
+                }
+                else//若同时满足，则将队列任务取出来并启动进程
+                {
+                    QStringList arguments;
+                    arguments = GetQueue_ahead_element(upload_queue, upload_file_queue_max_len);
+                    //qDebug() << arguments;
+
+                    upload_process->start(UPLOAD_SCRIPTS, arguments);
+                    qDebug("%d upload task in upload queue\n%d upload task ahead were submitted to upload_data.sh\n", len, upload_file_queue_max_len);
+                }
+            }
+            else
+            {
+                qDebug() << "upload_process state is Runing, wait ....";
+            }
+        }
+        else//upload_flag = false
+        {
+            /*
+             * upload_flag = false
+                有可能是内部上传任务失败而将其置为false
+                有可能是外部用户取消upload复选框的勾选而将其置为false
+                最后上传任务取消
+            */
+            qDebug() << "upload_flag = false. upload task is cancelled.";
+        }
+
+    }
+    else if(operation_code == UPLOAD_OPEN)//just for net test
+    {
+        upload_flag = true;
+
         if(upload_process->state() == QProcess::NotRunning)//进程状态是空闲
         {
-
-            if(len < upload_file_queue_max_len)//检查队列长度是否达到上限
-            {
-                qDebug("upload queue len(%d) is smaller than %d", len, upload_file_queue_max_len);
-            }
-            else//若同时满足，则将队列任务取出来并启动进程
-            {
-                QStringList arguments;
-                arguments = GetQueue_ahead_element(upload_queue, upload_file_queue_max_len);
-                //qDebug() << arguments;
-
-                upload_process->start(UPLOAD_SCRIPTS, arguments);
-                qDebug("%d upload task in upload queue\n%d upload task ahead were submitted to upload_data.sh\n", GetQueueLength(upload_queue), upload_file_queue_max_len);
-            }
+            upload_process->start(UPLOAD_SCRIPTS);//不传入文件名，仅仅做网络ping测试
         }
         else
         {
-            qDebug() << "upload_process state is Runing, wait ....";
+            qDebug() << "upload_process state is Runing, wait for net test ....";
         }
-    }
-    else
-    {
-        qDebug() << "Configuration in upload_file.sh is wrong. upload task is cancelled.";
     }
 }

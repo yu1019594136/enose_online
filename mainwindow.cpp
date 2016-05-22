@@ -78,6 +78,8 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->checkBox_10, SIGNAL(stateChanged(int)), SLOT(checkbox_10_changed(int)));
     connect(ui->checkBox_11, SIGNAL(stateChanged(int)), SLOT(checkbox_11_changed(int)));
 
+    connect(ui->checkBox_13, SIGNAL(stateChanged(int)), SLOT(checkbox_13_changed(int)), Qt::QueuedConnection);
+
     //使能START按钮，禁能STOP按钮
     ui->pushButton->setEnabled(true);
     ui->pushButton_2->setEnabled(false);
@@ -146,10 +148,23 @@ MainWindow::MainWindow(QWidget *parent) :
     /* PRU线程可以启动数据压缩进程 */
     connect(pruthread, SIGNAL(send_to_logicthread_start_compress_data()), logicthread, SLOT(compress_queue_check()), Qt::QueuedConnection);
 
+    /* 从逻辑线程接收数据，根据数据确定upload复选框状态以及label内容 */
+    connect(logicthread, SIGNAL(send_to_GUI_netreport(int)), this, SLOT(recei_fro_logicthread_netreport(int)), Qt::QueuedConnection);
+
+    //GUI线程上的upload复选框状态控制逻辑线程中上传文件的功能的开启与关闭
+    connect(this, SIGNAL(control_upload_script(int)), logicthread, SLOT(upload_queue_check(int)), Qt::QueuedConnection);
+
     uartthread->start();
     logicthread->start();
     pruthread->start();
     sht21_air_thread->start();
+
+    /*
+    逻辑线程根据脚本返回的代码获知网络状态，从而要从软件内部更新upload复选框状态，
+    而upload复选框状态的变化会触发槽函数checkbox_13_changed(int state)中再次发出
+    信号触发逻辑线程的槽函数进行关闭或者打开上传功能，为了避免连环触发，设置此变量。
+    */
+    upload_checkbox_13_trige_from_software = false;
 
 }
 
@@ -282,11 +297,6 @@ void MainWindow::on_pushButton_clicked()
     {
         gui_para.data_save_mode = USB_DEVICE;
         qDebug() << "data save mode = USB_DEVICE";
-    }
-    if(ui->radioButton_2->isChecked())
-    {
-        gui_para.data_save_mode = UPLOAD;
-        qDebug() << "data save mode = UPLOAD";
     }
 
     emit send_to_logic_GUI_data();
@@ -446,6 +456,35 @@ void MainWindow::checkbox_11_changed(int state)
     }
 }
 
+//此函数会被用户在界面上勾选upload复选框而触发以及
+//软件内部对upload复选框的状态更改的触发
+void MainWindow::checkbox_13_changed(int state)
+{
+    if(!upload_checkbox_13_trige_from_software)//如果外部触发
+    {
+        int mode;
+
+        if(state == Qt::Unchecked)
+        {
+            //关闭文件上传
+            qDebug() << "upload close";
+            ui->label_16->setText(QString("Upload close"));
+            mode = UPLOAD_CLOSE;
+            emit control_upload_script(mode);
+        }
+        else if(state == Qt::Checked)
+        {
+            //启动文件上传
+            qDebug() << "upload open";
+            ui->label_16->setText(QString("Upload is openning"));
+            mode = UPLOAD_OPEN;
+            emit control_upload_script(mode);
+        }
+    }
+    else//如果软件内部触发
+        upload_checkbox_13_trige_from_software = false;
+}
+
 void MainWindow::on_pushButton_2_clicked()
 {
     //通知逻辑线程stop按钮被按下
@@ -565,19 +604,11 @@ void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
     {
         ui->radioButton_5->setChecked(true);
         ui->radioButton->setChecked(false);
-        ui->radioButton_2->setChecked(false);
     }
     if(gui_para.data_save_mode == USB_DEVICE)
     {
         ui->radioButton_5->setChecked(false);
         ui->radioButton->setChecked(true);
-        ui->radioButton_2->setChecked(false);
-    }
-    if(gui_para.data_save_mode == UPLOAD)
-    {
-        ui->radioButton_5->setChecked(false);
-        ui->radioButton->setChecked(false);
-        ui->radioButton_2->setChecked(true);
     }
 
     if(gui_para.AIN[0] == 1)
@@ -644,6 +675,67 @@ void MainWindow::GUI_init()//从默认参数文件读取参数初始化界面
     {
         ui->radioButton_3->setChecked(false);
         ui->radioButton_4->setChecked(true);
+    }
+
+}
+
+//从逻辑线程接收数据，根据数据确定upload复选框状态以及label内容
+void MainWindow::recei_fro_logicthread_netreport(int exit_code)
+{
+    if(exit_code == 0)
+    {
+        //upload复选框的状态是否要变更
+        if(!(ui->checkBox_13->isChecked()))//如果当前的状态为false
+            upload_checkbox_13_trige_from_software = true;
+        else
+            upload_checkbox_13_trige_from_software = false;
+
+        ui->checkBox_13->setChecked(true);
+        ui->label_16->setText(QString("scp succeed, network active"));
+    }
+    else if(exit_code == 1)
+    {
+        //upload复选框的状态是否要变更
+        if(ui->checkBox_13->isChecked())//如果当前的状态为true
+            upload_checkbox_13_trige_from_software = true;
+        else
+            upload_checkbox_13_trige_from_software = false;
+
+        ui->checkBox_13->setChecked(false);
+        ui->label_16->setText(QString("ping failed, Host not exist"));
+    }
+    else if(exit_code == 2)
+    {
+        //upload复选框的状态是否要变更
+        if(ui->checkBox_13->isChecked())//如果当前的状态为true
+            upload_checkbox_13_trige_from_software = true;
+        else
+            upload_checkbox_13_trige_from_software = false;
+
+        ui->checkBox_13->setChecked(false);
+        ui->label_16->setText(QString("scp failed, File not exist"));
+    }
+    else if(exit_code == 3)
+    {
+        //upload复选框的状态是否要变更
+        if(ui->checkBox_13->isChecked())//如果当前的状态为true
+            upload_checkbox_13_trige_from_software = true;
+        else
+            upload_checkbox_13_trige_from_software = false;
+
+        ui->checkBox_13->setChecked(false);
+        ui->label_16->setText(QString("scp failed, Acc or Path error"));
+    }
+    else if(exit_code == 4)
+    {
+        //upload复选框的状态是否要变更
+        if(!(ui->checkBox_13->isChecked()))//如果当前的状态为false
+            upload_checkbox_13_trige_from_software = true;
+        else
+            upload_checkbox_13_trige_from_software = false;
+
+        ui->checkBox_13->setChecked(true);
+        ui->label_16->setText(QString("ping succeed, network active"));
     }
 
 }

@@ -77,7 +77,9 @@ signals:
     void terminate_upload_process();
 
     void start_compress_data();
-    void start_upload_file();
+    void start_upload_file(int mode);
+
+    void send_to_GUI_netreport(int exit_code);
 
 public slots:
     //接受各个线程的采集任务结果报告
@@ -87,7 +89,7 @@ public slots:
     void recei_parse_GUI_data();
 
     void compress_queue_check();
-    void upload_queue_check();
+    void upload_queue_check(int operation_code);
 
 private slots:
     //定时器时间到达时用于发送其他线程通知其停止数据采集，或者更新本定时器定时时间

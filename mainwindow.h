@@ -47,6 +47,8 @@ private slots:
     void checkbox_10_changed(int state);
     void checkbox_11_changed(int state);
 
+    void checkbox_13_changed(int state);
+
     void on_pushButton_2_clicked();
 
 public slots:
@@ -55,6 +57,9 @@ public slots:
 
     //执行退出应用程序的槽函数
     void recei_fro_logicthread_quit_application();
+
+    //从逻辑线程接收数据，根据数据确定upload复选框状态以及label内容
+    void recei_fro_logicthread_netreport(int exit_code);
 
 signals:
     //发送信号通知控制线程，界面参数已经读取
@@ -69,6 +74,9 @@ signals:
     //quit application
     void quit_application();
 
+    //启动脚本的模式
+    void control_upload_script(int upload_script_run_mode);
+
 
 private:
     Ui::MainWindow *ui;
@@ -82,6 +90,13 @@ private:
     PRU_Plot_Widget *pru_plot_widget;//pru数据绘图选项卡
     Air_Plot_Widget *air_plot_widget;//用于存储空气质量传感器绘图
     Sht21_Plot_Widget *sht21_plot_widget;//用于温湿度绘图
+
+    /*
+    逻辑线程根据脚本返回的代码获知网络状态，从而要从软件内部更新upload复选框状态，
+    而upload复选框状态的变化会触发槽函数checkbox_13_changed(int state)中再次发出
+    信号触发逻辑线程的槽函数进行关闭或者打开上传功能，为了避免连环触发，设置此变量。
+    */
+    bool upload_checkbox_13_trige_from_software;
 
     void GUI_init();//从默认参数文件读取参数初始化界面
 
