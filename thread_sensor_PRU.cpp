@@ -51,6 +51,8 @@ unsigned int *sharedMem_int;
 unsigned int PRUADC_stop = 1;
 unsigned int PRU_shared_mem_result[4] = {0};//用于保存PRU SHARED MEM的读取结果
 
+//some QString used to add serial
+QString zeros[SERIAL_LENGTH - 1];
 
 //pru数据的内存块，用于选项卡绘图的数据，该数据块循环更新，为全局变量
 PLOT_DATA_BUF pru_plot_data_buf;
@@ -83,6 +85,20 @@ PRUThread::PRUThread(QObject *parent) :
 
     AIN_num = 0;
     AIN_num_temp = 0;
+
+    for(int i = 0; i < SERIAL_LENGTH - 1; i++)
+    {
+        for(int j = 0; j < SERIAL_LENGTH - 1; j++)
+        {
+            if(j >= i)
+                zeros[j].append("0");
+        }
+    }
+
+    for(int i = 0; i < SERIAL_LENGTH - 1; i++)
+    {
+        qDebug() << "zeros_" << i << " = " << zeros[i];
+    }
 
     filename = NULL;
     fp_data_file = NULL;
@@ -153,7 +169,7 @@ void PRUThread::run()
             if(serial > 0)
             {
                 /* 生成数据文件名称 */
-                pru_plot_data_buf.filename = pru_sample_start.filename + QString::number(serial) + QString(".txt");
+                pru_plot_data_buf.filename = pru_sample_start.filename + handle_serial(serial) + QString(".txt");
                 qDebug() << "pru_plot_data_buf.filename = " << pru_plot_data_buf.filename;
 
                 //准备数据保存文件名char
@@ -631,4 +647,16 @@ int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte)
    close(mmap_fd);
 
     return SUCCESS;
+}
+
+/* 同一个采集任务中，PRU会有多个数据文件，此时需要序号来表明多个数据文件之间的先后顺序，该序号固定长度为5位 */
+QString handle_serial(unsigned int num)
+{
+    QString origin;
+    origin.setNum(num);
+
+    if(origin.length() >= SERIAL_LENGTH)
+        return origin;
+    else
+        return zeros[SERIAL_LENGTH - origin.length() - 1] + origin;
 }

@@ -7,6 +7,7 @@
 #include "qcommon.h"
 #include "common.h"
 
+#define SERIAL_LENGTH 5     //同一个采集任务中，PRU会有多个数据文件，此时需要序号来表明多个数据文件之间的先后顺序，该序号固定长度为5位
 
 /*-----------------pru-----------------*/
 #define ADC_PRU_NUM	   0   // using PRU0 for the ADC capture
@@ -76,6 +77,7 @@ private:
     char *filename;     //保存文件名称
     QByteArray ba;
     //QString filename_serial;//
+
     //record sample times when task starts
     unsigned int serial;
 
@@ -117,5 +119,8 @@ int save_and_plot_data(char * filename, unsigned int numberOutputSamples, unsign
 
 /* 拷贝数据到临时内存 */
 int copy_data_to_buf(unsigned short int *p_data, unsigned int Size_byte);
+
+/* 同一个采集任务中，PRU会有多个数据文件，此时需要序号来表明多个数据文件之间的先后顺序，该序号固定长度为5位 */
+QString handle_serial(unsigned int num);
 
 #endif // THREAD_SENSOR_PRU_H
